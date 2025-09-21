@@ -16,7 +16,8 @@ api = NinjaAPI(title="SingleCell AI Insights", version="0.1.0")
 def get_reports(request):
     """Return the catalog of curated nf-core/singlecell reports."""
 
-    return list_reports()
+    return [report.model_dump(mode="json") for report in list_reports()]
+
 
 
 @api.get("/reports/{report_id}/artifacts", response=List[ArtifactReference])
@@ -24,7 +25,7 @@ def get_report_artifacts(request, report_id: str):
     """Return artifact references tied to a single report."""
 
     try:
-        return list_artifacts(report_id)
+        return [artifact.model_dump(mode="json") for artifact in list_artifacts(report_id)]
     except ReportNotFoundError as exc:  # pragma: no cover - defensive branch
         raise HttpError(404, str(exc)) from exc
 
@@ -34,6 +35,6 @@ def post_chat_query(request, payload: ChatQueryRequest):
     """Return a placeholder chat response for the requested report."""
 
     try:
-        return answer_chat_query(payload)
+        return answer_chat_query(payload).model_dump(mode="json")
     except ReportNotFoundError as exc:
         raise HttpError(404, str(exc)) from exc
