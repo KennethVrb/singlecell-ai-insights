@@ -13,6 +13,7 @@ The POC validates feasibility across:
 - Showcase how AWS Bedrock-hosted models (accessed via LangChain) can answer domain-specific questions.
 - Provide a React web interface with intuitive report browsing and chat UX.
 - Implement a Django + Django Ninja backend that exposes APIs, performs retrieval/augmentation, and orchestrates AWS services.
+- Stand up a production-like vector store tier to support semantic retrieval across curated reports.
 - Deploy core services on AWS serverless primitives to illustrate scalability.
 
 ## 3. Non-Goals
@@ -38,9 +39,9 @@ The POC validates feasibility across:
 ```
 React Frontend → API Gateway → Django + Django Ninja (running on AWS Lambda)
                                     ↓
-                               Retrieval Layer (LangChain)
+                         Retrieval Layer (LangChain + Vector Store)
                                     ↓
-                  Report Artifacts in S3 (HTML/CSV/PNG) + Metadata Store (DynamoDB)
+         Vector Store (OpenSearch Serverless / pgvector) + Report Artifacts in S3 + Metadata (DynamoDB)
                                     ↓
                             AWS Bedrock (LLM endpoint)
 ```
@@ -63,33 +64,37 @@ React Frontend → API Gateway → Django + Django Ninja (running on AWS Lambda)
 - Business logic:
   - Retrieve report metadata from DynamoDB or static JSON.
   - Use LangChain to construct a retrieval-augmented prompt (HTML parsed to text, CSV -> summary embeddings).
+  - Persist and query embeddings in the vector store to ground model responses in the selected report.
   - Invoke AWS Bedrock LLM, passing prompt and attachments as needed.
   - Post-process AI answer, include references or chart links where possible.
 
 ### Data & Storage
 - **S3 Buckets:** store curated HTML reports, CSV exports, PNG plots.
 - **DynamoDB (or static config):** metadata about each report (sample name, pipeline version, artifact paths).
-- **Optional Vector Store:** e.g., managed via AWS OpenSearch Serverless or an embedded vector DB to store embeddings of parsed report sections for faster retrieval.
+- **Vector Store:** a managed service such as AWS OpenSearch Serverless or a serverless Postgres+pgvector instance that persists embeddings for parsed report sections and enables semantic retrieval during every chat interaction.
 
 ### AI & Retrieval
 - Use LangChain to orchestrate:
   - Loading report artifacts.
   - Splitting HTML/text into chunks.
   - Converting CSV key metrics into text summaries.
-  - Storing/retrieving embeddings.
+  - Storing/retrieving embeddings in the dedicated vector store.
   - Constructing prompts with context snippets.
 - Primary model: AWS Bedrock-hosted LLM (Claude, Titan, etc.).
 - Guardrails: prompt templates that emphasize factual accuracy and referencing provided context.
+- Vector store lifecycle: initial ingestion job generates embeddings for each artifact and writes them to the managed vector service; each chat query performs similarity search before invoking the model.
 
 ### Serverless Deployment
 - **Backend:** packaged as a Lambda function using container image or zipped dependencies.
 - **API Gateway:** handles HTTPS routing and simple auth (API keys or Cognito for future).
 - **Static Frontend Hosting:** React app deployed to S3 + CloudFront.
+- **Vector Store Deployment:** managed service provisioned via IaC (e.g., OpenSearch Serverless collection or Aurora Serverless with pgvector extension) seeded with embeddings during deployment.
 - **Infrastructure as Code:** optional CDK or Terraform scripts for reproducibility (lightweight for POC).
 
 ## 6. POC Scope & Assumptions
 - Limited to 2–3 curated nf-core/singlecell reports stored in S3.
 - Manual preprocessing allowed (e.g., generating embeddings offline).
+- Vector store provisioned and populated as part of the POC deployment to ensure semantic search is always available.
 - Minimal auth: static API key or user selection screen; production SSO deferred.
 - Observability limited to CloudWatch logs.
 - Chat history stored client-side for session duration; no persistent conversation DB required.
