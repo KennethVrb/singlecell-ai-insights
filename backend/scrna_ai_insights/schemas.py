@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import List, Literal, Optional
 
 from ninja import Schema
-from pydantic import AnyHttpUrl, Field
+from pydantic import AnyHttpUrl, Field, field_serializer
 
 
 class ReportSummary(Schema):
@@ -22,6 +22,10 @@ class ArtifactReference(Schema):
     type: str
     label: str
     url: AnyHttpUrl
+
+    @field_serializer('url')
+    def _serialize_url(self, value, _info):
+        return str(value)
 
 
 class ChatMessage(Schema):
