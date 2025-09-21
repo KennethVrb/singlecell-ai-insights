@@ -1,0 +1,68 @@
+.context-container {
+  display: grid;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  height: 100%;
+}
+
+.context-report h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.context-report p {
+  margin: 0.5rem 0 0;
+  color: #475569;
+  font-size: 0.95rem;
+}
+
+.context-artifacts h4 {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #4338ca;
+}
+
+.context-artifacts ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.context-artifacts li {
+  display: grid;
+  gap: 0.25rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+}
+
+.context-artifacts a {
+  color: #1d4ed8;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.context-artifacts a:hover {
+  text-decoration: underline;
+}
+
+.artifact-type {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #6366f1;
+}
+
+.context-empty {
+  height: 100%;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  color: #475569;
+  padding: 0 1.5rem;
+}
