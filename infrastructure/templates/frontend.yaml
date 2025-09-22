@@ -1,0 +1,135 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Frontend infrastructure for the Singlecell AI Insights application including S3
+  hosting and CloudFront distribution.
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Description: Short name used to identify the deployment environment (e.g. dev, prod).
+  DomainName:
+    Type: String
+    Default: ''
+    Description: Optional custom domain for the CloudFront distribution.
+  AcmCertificateArn:
+    Type: String
+    Default: ''
+    Description: >-
+      ACM certificate ARN in us-east-1 for the custom domain. Required when
+      DomainName is provided.
+  DefaultRootObject:
+    Type: String
+    Default: index.html
+    Description: Default root object served by CloudFront when no path is specified.
+  PriceClass:
+    Type: String
+    Default: PriceClass_100
+    AllowedValues:
+      - PriceClass_100
+      - PriceClass_200
+      - PriceClass_All
+    Description: CloudFront price class used for the distribution.
+
+Conditions:
+  HasCustomDomain: !Not [!Equals [!Ref DomainName, '']]
+  HasCertificate: !Not [!Equals [!Ref AcmCertificateArn, '']]
+  UseCustomDomain: !And [!Condition HasCustomDomain, !Condition HasCertificate]
+
+Resources:
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${EnvironmentName}-frontend-${AWS::AccountId}-${AWS::Region}"
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-frontend-bucket"
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  FrontendOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Description: !Sub "Access control for ${EnvironmentName} frontend bucket"
+        Name: !Sub "${EnvironmentName}-frontend-oac"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  FrontendDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: !Sub "${EnvironmentName} frontend distribution"
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          Compress: true
+          TargetOriginId: !Sub "${EnvironmentName}-frontend-origin"
+          ViewerProtocolPolicy: redirect-to-https
+        DefaultRootObject: !Ref DefaultRootObject
+        Enabled: true
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        Origins:
+          - Id: !Sub "${EnvironmentName}-frontend-origin"
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            OriginAccessControlId: !Ref FrontendOriginAccessControl
+            S3OriginConfig: {}
+        PriceClass: !Ref PriceClass
+        Aliases: !If
+          - UseCustomDomain
+          - [!Ref DomainName]
+          - !Ref AWS::NoValue
+        ViewerCertificate: !If
+          - UseCustomDomain
+          - AcmCertificateArn: !Ref AcmCertificateArn
+            MinimumProtocolVersion: TLSv1.2_2021
+            SslSupportMethod: sni-only
+          - CloudFrontDefaultCertificate: true
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    DependsOn: FrontendDistribution
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowCloudFrontServicePrincipalReadOnly
+            Action: s3:GetObject
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Resource: !Sub "${FrontendBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${FrontendDistribution}"
+
+Outputs:
+  BucketName:
+    Description: Name of the S3 bucket hosting the frontend build artifacts.
+    Value: !Ref FrontendBucket
+  DistributionId:
+    Description: Identifier of the CloudFront distribution.
+    Value: !Ref FrontendDistribution
+  DistributionDomainName:
+    Description: Domain name of the CloudFront distribution.
+    Value: !GetAtt FrontendDistribution.DomainName

@@ -1,0 +1,139 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Primary CloudFormation template that orchestrates the Singlecell AI Insights
+  application by delegating resource provisioning to nested stacks.
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Description: Short name used to identify the deployment environment (e.g. dev, prod).
+  TemplateBucketName:
+    Type: String
+    Description: Name of the S3 bucket that stores the nested CloudFormation templates.
+  TemplatePrefix:
+    Type: String
+    Default: infrastructure/templates
+    Description: Prefix within the template bucket where nested templates are stored.
+  FrontendDomainName:
+    Type: String
+    Default: ''
+    Description: Optional custom domain name for the frontend distribution.
+  FrontendAcmCertificateArn:
+    Type: String
+    Default: ''
+    Description: >-
+      ACM certificate ARN in us-east-1 for the custom frontend domain. Required when
+      FrontendDomainName is provided.
+  BackendContainerImage:
+    Type: String
+    Description: Container image URI to deploy for the backend service.
+  BackendContainerPort:
+    Type: Number
+    Default: 8000
+    Description: Container port exposed by the backend application.
+  BackendDesiredCount:
+    Type: Number
+    Default: 1
+    Description: Desired number of ECS tasks for the backend service.
+  BackendCpu:
+    Type: Number
+    Default: 512
+    Description: CPU units allocated to each backend task definition (e.g. 256, 512, 1024).
+  BackendMemory:
+    Type: Number
+    Default: 1024
+    Description: Memory (MiB) allocated to each backend task definition.
+  BackendHealthCheckPath:
+    Type: String
+    Default: /
+    Description: HTTP path used by the load balancer to health check the backend service.
+  BackendAssignPublicIp:
+    Type: String
+    AllowedValues:
+      - ENABLED
+      - DISABLED
+    Default: ENABLED
+    Description: Whether backend tasks receive a public IP address.
+  BackendServiceSubnetsOverride:
+    Type: String
+    Default: ''
+    Description: >-
+      Optional comma-delimited list of subnet IDs for backend tasks. When empty the
+      subnets created by the common stack are used.
+  BackendLoadBalancerSubnetsOverride:
+    Type: String
+    Default: ''
+    Description: >-
+      Optional comma-delimited list of subnet IDs for the backend load balancer. When
+      empty the subnets created by the common stack are used.
+
+Conditions:
+  HasBackendServiceSubnetOverride: !Not [!Equals [!Ref BackendServiceSubnetsOverride, '']]
+  HasBackendLoadBalancerSubnetOverride: !Not [!Equals [!Ref BackendLoadBalancerSubnetsOverride, '']]
+
+Resources:
+  CommonStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub
+        - https://${TemplateBucketName}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${CommonTemplatePath}
+        - { CommonTemplatePath: common/common-resources.yaml }
+      Parameters:
+        EnvironmentName: !Ref EnvironmentName
+
+  FrontendStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub
+        - https://${TemplateBucketName}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${FrontendTemplatePath}
+        - { FrontendTemplatePath: frontend.yaml }
+      Parameters:
+        EnvironmentName: !Ref EnvironmentName
+        DomainName: !Ref FrontendDomainName
+        AcmCertificateArn: !Ref FrontendAcmCertificateArn
+    DependsOn:
+      - CommonStack
+
+  BackendStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub
+        - https://${TemplateBucketName}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${BackendTemplatePath}
+        - { BackendTemplatePath: backend.yaml }
+      Parameters:
+        EnvironmentName: !Ref EnvironmentName
+        VpcId: !GetAtt [CommonStack, Outputs.VpcId]
+        ServiceSubnets: !If
+          - HasBackendServiceSubnetOverride
+          - !Ref BackendServiceSubnetsOverride
+          - !GetAtt [CommonStack, Outputs.PublicSubnetIds]
+        LoadBalancerSubnets: !If
+          - HasBackendLoadBalancerSubnetOverride
+          - !Ref BackendLoadBalancerSubnetsOverride
+          - !GetAtt [CommonStack, Outputs.PublicSubnetIds]
+        ContainerImage: !Ref BackendContainerImage
+        ContainerPort: !Ref BackendContainerPort
+        DesiredCount: !Ref BackendDesiredCount
+        Cpu: !Ref BackendCpu
+        Memory: !Ref BackendMemory
+        HealthCheckPath: !Ref BackendHealthCheckPath
+        AssignPublicIp: !Ref BackendAssignPublicIp
+    DependsOn:
+      - CommonStack
+
+Outputs:
+  FrontendBucketName:
+    Description: Name of the S3 bucket hosting the frontend build artifacts.
+    Value: !GetAtt [FrontendStack, Outputs.BucketName]
+  FrontendDistributionDomainName:
+    Description: CloudFront distribution domain name for the frontend application.
+    Value: !GetAtt [FrontendStack, Outputs.DistributionDomainName]
+  BackendServiceName:
+    Description: Name of the ECS service running the backend application.
+    Value: !GetAtt [BackendStack, Outputs.ServiceName]
+  BackendLoadBalancerDNSName:
+    Description: Public DNS name for the backend application load balancer.
+    Value: !GetAtt [BackendStack, Outputs.LoadBalancerDNSName]
+  VpcId:
+    Description: Identifier of the VPC created for the application.
+    Value: !GetAtt [CommonStack, Outputs.VpcId]

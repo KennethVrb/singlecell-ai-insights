@@ -1,0 +1,284 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Backend infrastructure for the Singlecell AI Insights application using Amazon ECS
+  on AWS Fargate behind an Application Load Balancer.
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Description: Short name used to identify the deployment environment (e.g. dev, prod).
+  VpcId:
+    Type: String
+    Description: Identifier of the VPC where backend resources will be created.
+  ServiceSubnets:
+    Type: CommaDelimitedList
+    Description: Subnet identifiers used by the ECS service tasks.
+  LoadBalancerSubnets:
+    Type: CommaDelimitedList
+    Description: Subnet identifiers used by the Application Load Balancer.
+  ContainerImage:
+    Type: String
+    Description: Container image URI to deploy for the backend service.
+  ContainerPort:
+    Type: Number
+    Default: 8000
+    Description: Container port exposed by the backend application.
+  DesiredCount:
+    Type: Number
+    Default: 1
+    Description: Desired number of ECS tasks running for the backend service.
+  Cpu:
+    Type: Number
+    Default: 512
+    Description: CPU units allocated to each task definition revision.
+  Memory:
+    Type: Number
+    Default: 1024
+    Description: Memory (MiB) allocated to each task definition revision.
+  HealthCheckPath:
+    Type: String
+    Default: /
+    Description: HTTP health check path for the backend load balancer target group.
+  AssignPublicIp:
+    Type: String
+    AllowedValues:
+      - ENABLED
+      - DISABLED
+    Default: ENABLED
+    Description: Whether the ECS tasks receive a public IP address.
+  ListenerPort:
+    Type: Number
+    Default: 80
+    Description: Listener port for the Application Load Balancer.
+
+Resources:
+  BackendCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub "${EnvironmentName}-backend"
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-backend-cluster"
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  BackendTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Path: /
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-backend-task-execution-role"
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  BackendTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: !Sub "${EnvironmentName}-backend-logs"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-backend-task-role"
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  BackendLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/ecs/${EnvironmentName}/backend"
+      RetentionInDays: 30
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  BackendLoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow inbound HTTP traffic to the backend load balancer.
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow internet access to the backend service.
+          FromPort: !Ref ListenerPort
+          IpProtocol: tcp
+          ToPort: !Ref ListenerPort
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic.
+          FromPort: 0
+          IpProtocol: -1
+          ToPort: 0
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-backend-alb-sg"
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  BackendServiceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow the load balancer to reach backend tasks.
+      SecurityGroupIngress:
+        - Description: Allow traffic from the load balancer.
+          FromPort: !Ref ContainerPort
+          IpProtocol: tcp
+          SourceSecurityGroupId: !Ref BackendLoadBalancerSecurityGroup
+          ToPort: !Ref ContainerPort
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic.
+          FromPort: 0
+          IpProtocol: -1
+          ToPort: 0
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-backend-service-sg"
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  BackendTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Cpu: !Ref Cpu
+      ExecutionRoleArn: !GetAtt BackendTaskExecutionRole.Arn
+      Family: !Sub "${EnvironmentName}-backend"
+      Memory: !Ref Memory
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      RuntimePlatform:
+        CpuArchitecture: X86_64
+        OperatingSystemFamily: LINUX
+      TaskRoleArn: !GetAtt BackendTaskRole.Arn
+      ContainerDefinitions:
+        - Name: !Sub "${EnvironmentName}-backend"
+          Image: !Ref ContainerImage
+          Essential: true
+          PortMappings:
+            - ContainerPort: !Ref ContainerPort
+              Protocol: tcp
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref BackendLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: backend
+
+  BackendLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub "${EnvironmentName}-backend"
+      Scheme: internet-facing
+      Subnets: !Ref LoadBalancerSubnets
+      SecurityGroups:
+        - !Ref BackendLoadBalancerSecurityGroup
+      Type: application
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-backend-alb"
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  BackendTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: !Ref HealthCheckPath
+      HealthCheckProtocol: HTTP
+      Matcher:
+        HttpCode: 200-399
+      Port: !Ref ContainerPort
+      Protocol: HTTP
+      TargetType: ip
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-backend-tg"
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  BackendListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref BackendTargetGroup
+      LoadBalancerArn: !Ref BackendLoadBalancer
+      Port: !Ref ListenerPort
+      Protocol: HTTP
+
+  BackendService:
+    Type: AWS::ECS::Service
+    DependsOn:
+      - BackendListener
+    Properties:
+      Cluster: !Ref BackendCluster
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 50
+      DesiredCount: !Ref DesiredCount
+      LaunchType: FARGATE
+      LoadBalancers:
+        - ContainerName: !Sub "${EnvironmentName}-backend"
+          ContainerPort: !Ref ContainerPort
+          TargetGroupArn: !Ref BackendTargetGroup
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: !Ref AssignPublicIp
+          SecurityGroups:
+            - !Ref BackendServiceSecurityGroup
+          Subnets: !Ref ServiceSubnets
+      PlatformVersion: LATEST
+      TaskDefinition: !Ref BackendTaskDefinition
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-backend-service"
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+Outputs:
+  ClusterName:
+    Description: Name of the ECS cluster running the backend application.
+    Value: !Ref BackendCluster
+  ServiceName:
+    Description: Name of the ECS service running the backend application.
+    Value: !GetAtt BackendService.Name
+  LoadBalancerDNSName:
+    Description: DNS name of the backend Application Load Balancer.
+    Value: !GetAtt BackendLoadBalancer.DNSName
+  TargetGroupArn:
+    Description: ARN of the backend target group.
+    Value: !Ref BackendTargetGroup
+  LogGroupName:
+    Description: CloudWatch Logs group capturing backend container logs.
+    Value: !Ref BackendLogGroup
