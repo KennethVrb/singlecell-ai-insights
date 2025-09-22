@@ -50,6 +50,27 @@ Parameters:
     Type: Number
     Default: 80
     Description: Listener port for the Application Load Balancer.
+  DomainName:
+    Type: String
+    Default: ''
+    Description: Optional custom domain for the backend CloudFront distribution.
+  AcmCertificateArn:
+    Type: String
+    Default: ''
+    Description: ACM certificate ARN in us-east-1 for the custom backend domain.
+  PriceClass:
+    Type: String
+    Default: PriceClass_100
+    AllowedValues:
+      - PriceClass_100
+      - PriceClass_200
+      - PriceClass_All
+    Description: CloudFront price class for the backend distribution.
+
+Conditions:
+  HasCustomDomain: !Not [!Equals [!Ref DomainName, '']]
+  HasCertificate: !Not [!Equals [!Ref AcmCertificateArn, '']]
+  UseCustomDomain: !And [!Condition HasCustomDomain, !Condition HasCertificate]
 
 Resources:
   BackendCluster:
@@ -237,6 +258,65 @@ Resources:
       Port: !Ref ListenerPort
       Protocol: HTTP
 
+  BackendOriginRequestPolicy:
+    Type: AWS::CloudFront::OriginRequestPolicy
+    Properties:
+      OriginRequestPolicyConfig:
+        Comment: !Sub "Forward all viewer context to ${EnvironmentName} backend origin"
+        Name: !Sub "${EnvironmentName}-backend-origin-request"
+        CookiesConfig:
+          CookieBehavior: all
+        HeadersConfig:
+          HeaderBehavior: allViewer
+        QueryStringsConfig:
+          QueryStringBehavior: all
+
+  BackendDistribution:
+    Type: AWS::CloudFront::Distribution
+    DependsOn:
+      - BackendListener
+    Properties:
+      DistributionConfig:
+        Aliases: !If
+          - UseCustomDomain
+          - [!Ref DomainName]
+          - !Ref AWS::NoValue
+        Comment: !Sub "${EnvironmentName} backend distribution"
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+            - PUT
+            - PATCH
+            - POST
+            - DELETE
+          CachedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          CachePolicyId: 413bf1f5-95ef-40fb-9a61-2e41a1b0f6a0
+          Compress: true
+          OriginRequestPolicyId: !Ref BackendOriginRequestPolicy
+          TargetOriginId: !Sub "${EnvironmentName}-backend-origin"
+          ViewerProtocolPolicy: redirect-to-https
+        Enabled: true
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        Origins:
+          - Id: !Sub "${EnvironmentName}-backend-origin"
+            DomainName: !GetAtt BackendLoadBalancer.DNSName
+            CustomOriginConfig:
+              HTTPPort: !Ref ListenerPort
+              OriginProtocolPolicy: http-only
+        PriceClass: !Ref PriceClass
+        ViewerCertificate: !If
+          - UseCustomDomain
+          - AcmCertificateArn: !Ref AcmCertificateArn
+            MinimumProtocolVersion: TLSv1.2_2021
+            SslSupportMethod: sni-only
+          - CloudFrontDefaultCertificate: true
+
   BackendService:
     Type: AWS::ECS::Service
     DependsOn:
@@ -276,6 +356,12 @@ Outputs:
   LoadBalancerDNSName:
     Description: DNS name of the backend Application Load Balancer.
     Value: !GetAtt BackendLoadBalancer.DNSName
+  DistributionId:
+    Description: Identifier of the CloudFront distribution serving the backend API.
+    Value: !Ref BackendDistribution
+  DistributionDomainName:
+    Description: Domain name of the CloudFront distribution serving the backend API.
+    Value: !GetAtt BackendDistribution.DomainName
   TargetGroupArn:
     Description: ARN of the backend target group.
     Value: !Ref BackendTargetGroup

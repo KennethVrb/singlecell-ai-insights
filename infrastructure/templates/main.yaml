@@ -66,6 +66,24 @@ Parameters:
     Description: >-
       Optional comma-delimited list of subnet IDs for the backend load balancer. When
       empty the subnets created by the common stack are used.
+  BackendDomainName:
+    Type: String
+    Default: ''
+    Description: Optional custom domain name for the backend CloudFront distribution.
+  BackendAcmCertificateArn:
+    Type: String
+    Default: ''
+    Description: >-
+      ACM certificate ARN in us-east-1 for the custom backend domain. Required when
+      BackendDomainName is provided.
+  BackendPriceClass:
+    Type: String
+    Default: PriceClass_100
+    AllowedValues:
+      - PriceClass_100
+      - PriceClass_200
+      - PriceClass_All
+    Description: CloudFront price class used for the backend distribution.
 
 Conditions:
   HasBackendServiceSubnetOverride: !Not [!Equals [!Ref BackendServiceSubnetsOverride, '']]
@@ -118,6 +136,9 @@ Resources:
         Memory: !Ref BackendMemory
         HealthCheckPath: !Ref BackendHealthCheckPath
         AssignPublicIp: !Ref BackendAssignPublicIp
+        DomainName: !Ref BackendDomainName
+        AcmCertificateArn: !Ref BackendAcmCertificateArn
+        PriceClass: !Ref BackendPriceClass
     DependsOn:
       - CommonStack
 
@@ -131,6 +152,12 @@ Outputs:
   BackendServiceName:
     Description: Name of the ECS service running the backend application.
     Value: !GetAtt [BackendStack, Outputs.ServiceName]
+  BackendDistributionDomainName:
+    Description: CloudFront distribution domain name for the backend API.
+    Value: !GetAtt [BackendStack, Outputs.DistributionDomainName]
+  BackendDistributionId:
+    Description: Identifier of the CloudFront distribution serving the backend API.
+    Value: !GetAtt [BackendStack, Outputs.DistributionId]
   BackendLoadBalancerDNSName:
     Description: Public DNS name for the backend application load balancer.
     Value: !GetAtt [BackendStack, Outputs.LoadBalancerDNSName]
