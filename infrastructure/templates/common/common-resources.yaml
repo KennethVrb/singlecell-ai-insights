@@ -1,0 +1,119 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Shared networking resources that support the Singlecell AI Insights application
+  stacks.
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Description: Short name used to identify the deployment environment (e.g. dev, prod).
+  VpcCidrBlock:
+    Type: String
+    Default: 10.0.0.0/16
+    Description: CIDR block assigned to the application VPC.
+  PublicSubnetACidr:
+    Type: String
+    Default: 10.0.0.0/20
+    Description: CIDR block for the first public subnet.
+  PublicSubnetBCidr:
+    Type: String
+    Default: 10.0.16.0/20
+    Description: CIDR block for the second public subnet.
+
+Resources:
+  ApplicationVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidrBlock
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-vpc"
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-igw"
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  VpcGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref ApplicationVpc
+
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref ApplicationVpc
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Ref PublicSubnetACidr
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-public-a"
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  PublicSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref ApplicationVpc
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: !Ref PublicSubnetBCidr
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-public-b"
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref ApplicationVpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-public-rt"
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: VpcGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetAAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnetA
+
+  PublicSubnetBAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnetB
+
+Outputs:
+  VpcId:
+    Description: Identifier of the application VPC.
+    Value: !Ref ApplicationVpc
+  PublicSubnetIds:
+    Description: Comma-delimited list of public subnet identifiers.
+    Value: !Join [",", [!Ref PublicSubnetA, !Ref PublicSubnetB]]
+  PublicSubnetAId:
+    Description: Identifier of the first public subnet.
+    Value: !Ref PublicSubnetA
+  PublicSubnetBId:
+    Description: Identifier of the second public subnet.
+    Value: !Ref PublicSubnetB
