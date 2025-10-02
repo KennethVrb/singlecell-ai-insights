@@ -4,22 +4,21 @@
 SingleCell AI Insights is a proof-of-concept platform that lets researchers interact with single-cell transcriptomics outputs (produced by the nf-core/singlecell pipeline) using a conversational AI assistant. Instead of navigating the HTML report, CSV exports, and PNG plots manually, users choose from a small library of preloaded reports and ask questions in natural language to obtain insights.
 
 The POC validates feasibility across:
-- **Multimodal data understanding** (HTML, CSV, PNG summaries)
 - **Retrieval-augmented conversation** over existing reports
 - **Serverless-friendly architecture** that can later scale to many users and datasets
 
 ## 2. Goals
 - Demonstrate an end-to-end flow from report selection to AI-assisted Q&A.
-- Showcase how AWS Bedrock-hosted models (accessed via LangChain) can answer domain-specific questions.
+- Showcase how AWS Bedrock-hosted models (accessed via LangChain and Bedrock Knowledge Bases) can answer domain-specific questions with retrieval-augmented generation.
 - Provide a React web interface with intuitive report browsing and chat UX.
 - Implement a Django + Django Ninja backend that exposes APIs, performs retrieval/augmentation, and orchestrates AWS services.
-- Stand up a production-like vector store tier to support semantic retrieval across curated reports.
+- Stand up a production-like vector store tier, managed through AWS Bedrock Knowledge Bases, to support semantic retrieval across curated reports.
 - Deploy core services on AWS serverless primitives to illustrate scalability.
 
 ## 3. Non-Goals
 - Generating or running the nf-core/singlecell pipeline itself.
 - Processing arbitrary user-uploaded reports.
-- Production-grade security, monitoring, or cost optimization.
+{{ ... }}
 - Automated interpretation of every possible output artifact; scope is limited to the curated reports used in the POC.
 
 ## 4. Personas & Use Cases
