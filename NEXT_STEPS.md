@@ -1,51 +1,46 @@
 # Next Steps Roadmap
 
 ## Backend (`backend/`)
-- **Bedrock knowledge base integration**
-  - [ ] Provision an AWS Bedrock Knowledge Base, configure embeddings model, and connect it to curated nf-core outputs stored in S3.
-  - [ ] Build an ingestion job (serverless batch or management command) to normalize HTML/CSV/PNG artifacts, push metadata, and sync documents into the knowledge base.
-  - [ ] Replace `answer_chat_query()` placeholder in `backend/scrna_ai_insights/services.py` with Bedrock KB retrieval + LLM call, including guardrails for empty hits and latency logging.
+- **HTML normalization**
+  - [ ] Build an AWS Lambda (or Django management command) that fetches raw report HTML from S3, strips boilerplate, and writes normalized sections back to S3 as structured JSON.
+  - [ ] Add a lightweight trigger in Django to re-run normalization when a report is added or updated.
+- **Bedrock integration**
+  - [ ] Replace `answer_chat_query()` with logic that loads normalized text, selects relevant sections (keyword or simple scoring), and calls an AWS Bedrock text model with a grounded prompt.
+  - [ ] Capture request/response metadata, handle empty context gracefully, and surface friendly errors to the client.
 - **API contract hardening**
-  - [ ] Extend `schemas.py` to surface citation metadata returned by Bedrock (e.g., chunk IDs, S3 paths) and update tests under `backend/scrna_ai_insights/tests/`.
-  - [ ] Add input validation and rate-limiting hooks (e.g., Django middleware) before exposing public endpoints.
-- **Observability & resilience**
-  - [ ] Instrument structured logging around Bedrock calls and retrieval scoring.
-  - [ ] Add retries/backoff for transient AWS errors and surface user-friendly messages.
+  - [ ] Update `schemas.py` to expose optional section titles/source URLs alongside answers.
+  - [ ] Extend tests in `backend/scrna_ai_insights/tests/` to cover success, empty-context, and Bedrock failure paths.
 
 ## Frontend (`frontend/`)
 - **Chat experience polish**
-  - [ ] Replace placeholder copy in `ChatPanel` with streaming or loading indicators tied to real backend latency.
-  - [ ] Display citations with source summaries (e.g., artifact type, section title) once backend returns richer metadata.
-- **Report discovery**
-  - [ ] Add filtering/search to the `ReportSelector` when catalog grows beyond a handful of items.
-  - [ ] Implement contextual previews in `ContextPanel` (render HTML snapshot, chart thumbnails) using signed URLs from the backend.
-- **State management & error handling**
-  - [ ] Centralize toast/error surface for network issues and disambiguate between 4xx vs 5xx responses.
-  - [ ] Persist conversation history in local storage so refreshes do not drop context.
+  - [ ] Show a loading indicator while Bedrock responses are pending and disable the send button during inference.
+  - [ ] Render returned section titles or citations inline when available.
+- **Context panel improvements**
+  - [ ] Display normalized HTML sections in `ContextPanel` with expand/collapse behavior.
+  - [ ] Provide fallback messaging when normalized content cannot be retrieved.
 
-## Data preparation pipeline
-- **Artifact normalization**
-  - [ ] Create scripts to convert nf-core outputs into text chunks, table summaries, and image descriptors prior to Bedrock ingestion.
-  - [ ] Store derived metadata (e.g., cell cluster labels) in DynamoDB or a lightweight JSON catalog for fast lookup.
+## Data preparation
+- **Report onboarding**
+  - [ ] Create a simple script to upload a sample nf-core HTML report to S3 and register its metadata (report ID, normalized text key).
+  - [ ] Document normalization assumptions (max size, ignored sections) for future data sources.
 
 ## Infrastructure & DevOps
-- **Environment provisioning**
-  - [ ] Draft IaC (Terraform or CDK) for API Gateway, Lambda, Bedrock KB, S3 buckets, and DynamoDB tables.
-  - [ ] Configure CI to run backend tests (`python backend/manage.py test`) and frontend builds (`npm run build`) on each push.
-- **Deployment workflow**
-  - [ ] Package Django app for Lambda (container image or zip) with secure configuration for Bedrock + AWS Secrets Manager.
-  - [ ] Set up frontend deployment to S3 + CloudFront with environment-specific API base URLs.
+- **Serverless plumbing**
+  - [ ] Provision S3 bucket, normalization Lambda, IAM roles, and required environment variables via lightweight IaC (Terraform or CDK).
+  - [ ] Configure API Gateway + Lambda (or container) deployment for the Django service with access to Bedrock and S3.
+- **CI basics**
+  - [ ] Add continuous integration to run `python backend/manage.py test` and `npm run build` on each push.
 
 ## Testing & QA
-- **Automated testing**
-  - [ ] Expand backend tests to cover failure paths (missing citations, Bedrock timeouts) and contract fixtures.
-  - [ ] Add React Testing Library coverage for chat flows, artifact rendering, and error states.
+- **Automated checks**
+  - [ ] Add unit tests for HTML normalization logic (section extraction, cleaning, chunking).
+  - [ ] Add React Testing Library coverage for chat flow, loading states, and error surfaces.
 - **Manual validation**
-  - [ ] Define QA checklist covering typical scientist workflows (QC questions, cluster comparisons, artifact exploration).
+  - [ ] Draft a checklist ensuring at least one report answers representative questions and handles failure cases (Bedrock errors, missing normalized text).
 
 ## Documentation & Enablement
 - **Operational docs**
-  - [ ] Update `README.md` with Bedrock Knowledge Base setup prerequisites, IAM policies, and environment variable requirements.
-  - [ ] Provide runbooks for data ingestion, vector refresh, and troubleshooting common errors.
+  - [ ] Update `README.md` with Bedrock credential requirements, Lambda deployment steps, and normalization workflow.
+  - [ ] Provide a quickstart for running normalization locally and invoking the backend chat endpoint.
 - **User guidance**
-  - [ ] Draft onboarding guide explaining how scientists select reports, interpret citations, and request new datasets.
+  - [ ] Capture example prompts and screenshots showing the assistant summarizing the sample report.

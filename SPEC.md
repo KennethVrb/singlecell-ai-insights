@@ -9,10 +9,10 @@ The POC validates feasibility across:
 
 ## 2. Goals
 - Demonstrate an end-to-end flow from report selection to AI-assisted Q&A.
-- Showcase how AWS Bedrock-hosted models (accessed via LangChain and Bedrock Knowledge Bases) can answer domain-specific questions with retrieval-augmented generation.
+- Showcase how AWS Bedrock-hosted models can answer domain-specific questions using normalized HTML context.
 - Provide a React web interface with intuitive report browsing and chat UX.
-- Implement a Django + Django Ninja backend that exposes APIs, performs retrieval/augmentation, and orchestrates AWS services.
-- Stand up a production-like vector store tier, managed through AWS Bedrock Knowledge Bases, to support semantic retrieval across curated reports.
+- Implement a Django + Django Ninja backend that exposes APIs, pulls normalized report context, and orchestrates AWS Bedrock calls.
+- Normalize curated HTML reports via a lightweight Lambda job so they can be supplied as grounded context to the model.
 - Deploy core services on AWS serverless primitives to illustrate scalability.
 
 ## 3. Non-Goals
@@ -31,69 +31,51 @@ The POC validates feasibility across:
 2. **Dive into QC metrics:** “What is the percentage of cells filtered out?”
 3. **Compare sample conditions:** “Summarize differences between treatment and control in this report.”
 4. **Understand plots:** “Describe what the UMAP plot indicates for the top clusters.”
-
 ## 5. System Architecture
 
 ### High-Level Diagram (conceptual)
 ```
 React Frontend → API Gateway → Django + Django Ninja (running on AWS Lambda)
-                                    ↓
-                         Retrieval Layer (LangChain + Vector Store)
-                                    ↓
-         Vector Store (OpenSearch Serverless / pgvector) + Report Artifacts in S3 + Metadata (DynamoDB)
-                                    ↓
-                            AWS Bedrock (LLM endpoint)
+                                   ↓
+                 Normalized HTML Context in S3 (produced by Lambda ingestion)
+                                   ↓
+                           AWS Bedrock (LLM endpoint)
 ```
 
 ### Frontend (React)
 - Single-page application that lists available reports and launches the chat interface.
 - State management (e.g., Redux Toolkit or React Query) to cache report metadata and conversation history.
-- UI components:
-  - Report selector
-  - Chat window with conversational history
-  - Context panel showing linked CSV tables or plots upon demand
-- Authentication stub or simple access token (POC-level security).
-
-### Backend (Django + Django Ninja)
-- Exposed via AWS API Gateway → Lambda using ASGI adapter (e.g., Mangum).
-- API endpoints:
-  1. `GET /reports`: list curated POC reports (metadata, sample IDs, etc.).
+{{ ... }}
   2. `POST /chat/query`: accepts `{report_id, user_query, conversation_context}` and returns AI response.
-  3. `GET /reports/{id}/artifacts`: returns signed URLs for HTML/CSV/PNG assets (optional for UI preview).
-- Business logic:
+- Business Logic:
   - Retrieve report metadata from DynamoDB or static JSON.
-  - Use LangChain to construct a retrieval-augmented prompt (HTML parsed to text, CSV -> summary embeddings).
-  - Persist and query embeddings in the vector store to ground model responses in the selected report.
-  - Invoke AWS Bedrock LLM, passing prompt and attachments as needed.
-  - Post-process AI answer, include references or chart links where possible.
+  - Fetch normalized HTML text (preprocessed via Lambda) for the selected report.
+  - Construct a grounded prompt by combining the user question with relevant HTML sections.
+  - Invoke AWS Bedrock LLM directly and return the generated answer with contextual hints.
 
 ### Data & Storage
-- **S3 Buckets:** store curated HTML reports, CSV exports, PNG plots.
-- **DynamoDB (or static config):** metadata about each report (sample name, pipeline version, artifact paths).
-- **Vector Store:** a managed service such as AWS OpenSearch Serverless or a serverless Postgres+pgvector instance that persists embeddings for parsed report sections and enables semantic retrieval during every chat interaction.
-
+- **S3 Buckets:** store curated HTML reports, normalized HTML text outputs, and optional CSV/PNG artifacts.
+- **DynamoDB (or static config):** metadata about each report (sample name, pipeline version, normalized text location).
 ### AI & Retrieval
-- Use LangChain to orchestrate:
-  - Loading report artifacts.
-  - Splitting HTML/text into chunks.
-  - Converting CSV key metrics into text summaries.
-  - Storing/retrieving embeddings in the dedicated vector store.
-  - Constructing prompts with context snippets.
-- Primary model: AWS Bedrock-hosted LLM (Claude, Titan, etc.).
-- Guardrails: prompt templates that emphasize factual accuracy and referencing provided context.
-- Vector store lifecycle: initial ingestion job generates embeddings for each artifact and writes them to the managed vector service; each chat query performs similarity search before invoking the model.
+- Lambda-based ingestion:
+  - Load HTML reports from S3 and strip navigation/boilerplate to produce clean text sections.
+  - Optionally summarize key CSV metrics and append to the normalized text.
+  - Write normalized outputs back to S3 with metadata describing section titles and offsets.
+- Chat flow:
+  - Backend retrieves the normalized text for the selected report, selects relevant sections, and crafts a prompt.
+  - Primary model: AWS Bedrock-hosted LLM (Claude, Titan, etc.) invoked with the grounded prompt.
+- Guardrails: prompt templates that emphasize factual accuracy, section citations, and user-friendly follow-ups.
 
 ### Serverless Deployment
 - **Backend:** packaged as a Lambda function using container image or zipped dependencies.
 - **API Gateway:** handles HTTPS routing and simple auth (API keys or Cognito for future).
 - **Static Frontend Hosting:** React app deployed to S3 + CloudFront.
-- **Vector Store Deployment:** managed service provisioned via IaC (e.g., OpenSearch Serverless collection or Aurora Serverless with pgvector extension) seeded with embeddings during deployment.
-- **Infrastructure as Code:** optional CDK or Terraform scripts for reproducibility (lightweight for POC).
+{{ ... }}
 
 ## 6. POC Scope & Assumptions
 - Limited to 2–3 curated nf-core/singlecell reports stored in S3.
-- Manual preprocessing allowed (e.g., generating embeddings offline).
-- Vector store provisioned and populated as part of the POC deployment to ensure semantic search is always available.
+- Manual preprocessing allowed (e.g., running the HTML normalization Lambda on demand).
+- Normalized HTML text is generated ahead of queries; no dedicated vector store is required for the MVP.
 - Minimal auth: static API key or user selection screen; production SSO deferred.
 - Observability limited to CloudWatch logs.
 - Chat history stored client-side for session duration; no persistent conversation DB required.
@@ -148,7 +130,7 @@ React Frontend → API Gateway → Django + Django Ninja (running on AWS Lambda)
 | Risk | Description | Mitigation |
 |------|-------------|------------|
 | Model hallucinations | LLM may invent results not present in reports | Strict prompt templates, provide citations, consider retrieval confidence scores |
-| Limited context window | Large HTML/CSV content may exceed model limits | Chunking strategy, pre-summarization via LangChain |
+| Limited context window | Large HTML content may exceed model limits | Chunking strategy during normalization, tailored prompt budgets |
 | Latency | Serverless cold starts and LLM latency | Provisioned concurrency for critical Lambdas, caching embeddings |
 | Data parsing complexity | HTML reports may need custom parsing | Use BeautifulSoup or nf-core structured outputs; preprocess offline |
 
