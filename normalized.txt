@@ -1,0 +1,16 @@
+Sample 20k_NSCLC_DTC_1
+  - % Dups (percent_duplicates): raw 10.1 normalized 0.0000 | % Duplicate Reads
+  - % GC (percent_gc): raw 45 normalized 0.0000 | Average % GC Content
+  - Read Length (avg_sequence_length): raw 28 normalized 0.0000 | Average Read Length (bp)
+  - % Failed (percent_fails): raw 0 normalized 0.0000 | Percentage of modules failed in FastQC report (includes those not plotted here)
+  - M Seqs (total_sequences): raw 1.102e+08 normalized 0.0000 | Total Sequences (millions)
+
+Sample 20k_NSCLC_DTC_2
+  - % Dups (percent_duplicates): raw 54.58 normalized 1.0000 | % Duplicate Reads
+  - % GC (percent_gc): raw 46 normalized 1.0000 | Average % GC Content
+  - Read Length (avg_sequence_length): raw 90 normalized 1.0000 | Average Read Length (bp)
+  - % Failed (percent_fails): raw 9.091 normalized 1.0000 | Percentage of modules failed in FastQC report (includes those not plotted here)
+  - M Seqs (total_sequences): raw 1.102e+08 normalized 0.0000 | Total Sequences (millions)
+
+Sample multiqc
+  - # Variants (VariantTotal): raw 0 normalized 0.0000 | Total variants detected.

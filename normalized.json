@@ -1,0 +1,133 @@
+{
+  "metrics": {
+    "Variant-COMPLEX": {
+      "title": "Variant-COMPLEX",
+      "description": null,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "Variant-DEL": {
+      "title": "Variant-DEL",
+      "description": null,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "Variant-INS": {
+      "title": "Variant-INS",
+      "description": null,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "Variant-SNP": {
+      "title": "Variant-SNP",
+      "description": null,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "VariantTotal": {
+      "title": "# Variants",
+      "description": "Total variants detected.",
+      "min": 0.0,
+      "max": 0.0
+    },
+    "percent_gc": {
+      "title": "% GC",
+      "description": "Average % GC Content",
+      "min": 45.0,
+      "max": 46.0
+    },
+    "avg_sequence_length": {
+      "title": "Read Length",
+      "description": "Average Read Length (bp)",
+      "min": 28.0,
+      "max": 90.0
+    },
+    "total_sequences": {
+      "title": "M Seqs",
+      "description": "Total Sequences (millions)",
+      "min": 110230451.0,
+      "max": 110230451.0
+    },
+    "percent_duplicates": {
+      "title": "% Dups",
+      "description": "% Duplicate Reads",
+      "min": 10.102742732115388,
+      "max": 54.581763813834115
+    },
+    "percent_fails": {
+      "title": "% Failed",
+      "description": "Percentage of modules failed in FastQC report (includes those not plotted here)",
+      "min": 0.0,
+      "max": 9.090909090909092
+    }
+  },
+  "samples": {
+    "multiqc": {
+      "Variant-COMPLEX": {
+        "raw": 0.0,
+        "normalized": 0.0
+      },
+      "Variant-DEL": {
+        "raw": 0.0,
+        "normalized": 0.0
+      },
+      "Variant-INS": {
+        "raw": 0.0,
+        "normalized": 0.0
+      },
+      "Variant-SNP": {
+        "raw": 0.0,
+        "normalized": 0.0
+      },
+      "VariantTotal": {
+        "raw": 0.0,
+        "normalized": 0.0
+      }
+    },
+    "20k_NSCLC_DTC_2": {
+      "percent_gc": {
+        "raw": 46.0,
+        "normalized": 1.0
+      },
+      "avg_sequence_length": {
+        "raw": 90.0,
+        "normalized": 1.0
+      },
+      "total_sequences": {
+        "raw": 110230451.0,
+        "normalized": 0.0
+      },
+      "percent_duplicates": {
+        "raw": 54.581763813834115,
+        "normalized": 1.0
+      },
+      "percent_fails": {
+        "raw": 9.090909090909092,
+        "normalized": 1.0
+      }
+    },
+    "20k_NSCLC_DTC_1": {
+      "percent_gc": {
+        "raw": 45.0,
+        "normalized": 0.0
+      },
+      "avg_sequence_length": {
+        "raw": 28.0,
+        "normalized": 0.0
+      },
+      "total_sequences": {
+        "raw": 110230451.0,
+        "normalized": 0.0
+      },
+      "percent_duplicates": {
+        "raw": 10.102742732115388,
+        "normalized": 0.0
+      },
+      "percent_fails": {
+        "raw": 0.0,
+        "normalized": 0.0
+      }
+    }
+  },
+  "context_text": "Sample 20k_NSCLC_DTC_1\n  - % Dups (percent_duplicates): raw 10.1 normalized 0.0000 | % Duplicate Reads\n  - % GC (percent_gc): raw 45 normalized 0.0000 | Average % GC Content\n  - Read Length (avg_sequence_length): raw 28 normalized 0.0000 | Average Read Length (bp)\n  - % Failed (percent_fails): raw 0 normalized 0.0000 | Percentage of modules failed in FastQC report (includes those not plotted here)\n  - M Seqs (total_sequences): raw 1.102e+08 normalized 0.0000 | Total Sequences (millions)\n\nSample 20k_NSCLC_DTC_2\n  - % Dups (percent_duplicates): raw 54.58 normalized 1.0000 | % Duplicate Reads\n  - % GC (percent_gc): raw 46 normalized 1.0000 | Average % GC Content\n  - Read Length (avg_sequence_length): raw 90 normalized 1.0000 | Average Read Length (bp)\n  - % Failed (percent_fails): raw 9.091 normalized 1.0000 | Percentage of modules failed in FastQC report (includes those not plotted here)\n  - M Seqs (total_sequences): raw 1.102e+08 normalized 0.0000 | Total Sequences (millions)\n\nSample multiqc\n  - # Variants (VariantTotal): raw 0 normalized 0.0000 | Total variants detected."
+}

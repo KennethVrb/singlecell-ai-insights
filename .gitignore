@@ -9,3 +9,6 @@ venv/
 .mypy_cache/
 .pytest_cache/
 .DS_Store/
+
+
+normalized_data/
