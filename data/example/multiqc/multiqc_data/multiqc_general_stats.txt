@@ -1,0 +1,4 @@
+Sample	FastQC_mqc-generalstats-fastqc-percent_duplicates	FastQC_mqc-generalstats-fastqc-percent_gc	FastQC_mqc-generalstats-fastqc-avg_sequence_length	FastQC_mqc-generalstats-fastqc-percent_fails	FastQC_mqc-generalstats-fastqc-total_sequences	Snippy_mqc-generalstats-snippy-VariantTotal
+20k_NSCLC_DTC_1	10.102742732115388	45.0	28.0	0.0	110230451.0	
+20k_NSCLC_DTC_2	54.581763813834115	46.0	90.0	9.090909090909092	110230451.0	
+multiqc						0

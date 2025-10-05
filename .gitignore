@@ -8,4 +8,4 @@ venv/
 .idea/
 .mypy_cache/
 .pytest_cache/
-.DS_Store
+.DS_Store/

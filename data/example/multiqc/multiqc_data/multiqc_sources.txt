@@ -1,0 +1,4 @@
+Module	Section	Sample Name	Source
+Snippy	snippy	multiqc	/mnt/workflow/f0/2220b8a9e72b2b65a5e3fd6079acf2/tmp/tmp7mpookvq/multiqc.log
+FastQC	all_sections	20k_NSCLC_DTC_2	/mnt/workflow/f0/2220b8a9e72b2b65a5e3fd6079acf2/4/20k_NSCLC_DTC_2_fastqc.zip
+FastQC	all_sections	20k_NSCLC_DTC_1	/mnt/workflow/f0/2220b8a9e72b2b65a5e3fd6079acf2/3/20k_NSCLC_DTC_1_fastqc.zip
