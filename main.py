@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 from src.chat import ClaudeBedrockChat
-from src.tools.normalizer import normalize
+from src.tools.normalizer import normalize_multiqc
 
 
 def parse_args(argv=None):
@@ -27,11 +27,8 @@ def parse_args(argv=None):
     )
     normalize_parser.add_argument(
         '--json-output',
+        default='normalized.json',
         help='Path to write normalized JSON output. Defaults to stdout only.',
-    )
-    normalize_parser.add_argument(
-        '--text-output',
-        help='Path to write human-readable summary text.',
     )
 
     chat_parser = subparsers.add_parser(
@@ -92,9 +89,8 @@ def parse_args(argv=None):
 def run_normalize(args):
     input_dir = Path(args.input_dir)
     json_output = args.json_output
-    text_output = args.text_output
 
-    normalize(input_dir, json_output, text_output)
+    normalize_multiqc(input_dir, json_output)
 
 
 def build_chat(args):

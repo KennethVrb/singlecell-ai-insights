@@ -9,8 +9,8 @@ ANTHROPIC_VERSION = 'bedrock-2023-05-31'
 DEFAULT_SYSTEM_PROMPT = (
     'You are an expert computational biologist helping interpret MultiQC '
     'reports. Explain sequencing quality metrics in plain language and '
-    'recommend concrete follow-up actions when possible. Give concise, '
-    'direct answers.'
+    'recommend concrete follow-up actions when possible based on the given '
+    'multiqc normalized summary. Give concise, direct answers.'
 )
 
 
@@ -38,7 +38,7 @@ def load_normalized_payload(path):
             raise ValueError(
                 'invalid JSON payload in {}'.format(path)
             ) from exc
-    return data
+    return json.dumps(data, separators=(',', ':'))
 
 
 class ClaudeBedrockChat:
@@ -97,19 +97,14 @@ class ClaudeBedrockChat:
     def set_context(
         self,
         context_text=None,
-        normalized_payload=None,
         system_prompt=None,
     ):
         """Attach MultiQC context to the conversation.
 
         Args:
             context_text: Formatted summary of MultiQC metrics.
-            normalized_payload: Parsed normalized payload; the
-                `context_text` key will be used if present.
             system_prompt: Optional override for the system prompt.
         """
-        if context_text is None and normalized_payload:
-            context_text = normalized_payload.get('context_text')
         if system_prompt is None:
             system_prompt = self.base_system_prompt
 
@@ -200,10 +195,7 @@ class ClaudeBedrockChat:
 
     def load_context_from_file(self, path, system_prompt=None):
         """Load normalized results from disk and refresh the context."""
-        payload = load_normalized_payload(path)
         self.set_context(
-            context_text=payload.get('context_text'),
-            normalized_payload=payload,
+            context_text=load_normalized_payload(path),
             system_prompt=system_prompt,
         )
-        return payload

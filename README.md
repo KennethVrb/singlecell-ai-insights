@@ -15,7 +15,7 @@ Ensure AWS credentials are configured with access to Bedrock.
 ### Normalize MultiQC Results
 
 ```bash
-python main.py normalize /path/to/multiqc/output --json-output normalized.json --text-output normalized.txt
+python main.py normalize /path/to/multiqc/output --json-output normalized.json
 ```
 
 This command reads `multiqc_data.json`, computes normalized metrics, and writes structured output alongside a human-readable summary.
