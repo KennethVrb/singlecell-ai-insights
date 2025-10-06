@@ -2,6 +2,9 @@
 
 Utilities for normalizing MultiQC reports and discussing sequencing quality with Claude via Amazon Bedrock.
 
+> **New:** see [`docs/poc_solution.md`](docs/poc_solution.md) for a proposed React + Django proof-of-concept that surfaces
+> HealthOmics runs, exposes MultiQC metrics from S3, and embeds the Claude chatbot in a web UI.
+
 ## Installation
 
 ```bash
@@ -33,6 +36,7 @@ The chat command loads the normalized payload and opens an interactive conversat
 - `src/tools/normalize.py` contains utilities for parsing MultiQC data and building summaries.
 - `src/chat/bedrock.py` implements `ClaudeBedrockChat` for communicating with Claude.
 - `docs/claude_chat.md` offers additional configuration notes for the chat layer.
+- `docs/poc_solution.md` outlines the end-to-end web proof-of-concept architecture.
 
 ## Requirements
 
