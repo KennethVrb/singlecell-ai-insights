@@ -1,45 +1,64 @@
-# Single-cell AI Insights
+# Single-cell AI Insights Backend
 
-Utilities for normalizing MultiQC reports and discussing sequencing quality with Claude via Amazon Bedrock.
-
-> **New:** see [`docs/poc_solution.md`](docs/poc_solution.md) for a proposed React + Django proof-of-concept that surfaces
-> HealthOmics runs, exposes MultiQC metrics from S3, and embeds the Claude chatbot in a web UI.
-
-## Installation
-
-```bash
-pip install -r requirements.txt
-```
-
-Ensure AWS credentials are configured with access to Bedrock.
-
-## Usage
-
-### Normalize MultiQC Results
-
-```bash
-python main.py normalize /path/to/multiqc/output --json-output normalized.json
-```
-
-This command reads `multiqc_data.json`, computes normalized metrics, and writes structured output alongside a human-readable summary.
-
-### Chat with Claude
-
-```bash
-python main.py chat --payload normalized.json --ask "Which samples look concerning?"
-```
-
-The chat command loads the normalized payload and opens an interactive conversation with Claude. Use `--system-prompt`, `--model-id`, and sampling arguments to customize responses. Provide `--once` to skip interactive mode.
-
-## Project Structure
-
-- `src/tools/normalize.py` contains utilities for parsing MultiQC data and building summaries.
-- `src/chat/bedrock.py` implements `ClaudeBedrockChat` for communicating with Claude.
-- `docs/claude_chat.md` offers additional configuration notes for the chat layer.
-- `docs/poc_solution.md` outlines the end-to-end web proof-of-concept architecture.
+Backend service built with Django and Django REST Framework to surface metadata from AWS HealthOmics pipelines. The project persists run details locally so they can be revisited quickly after the initial fetch from AWS.
 
 ## Requirements
+- Python 3.10+
+- pip / virtualenv tooling of your choice
+- AWS credentials with permission to call the HealthOmics APIs
+- SQLite works out of the box; you can point Django at another database if preferred
 
-- Python 3.9+
-- AWS account with Bedrock access
-- `boto3`
+## Quick Start
+1. Create and activate a virtual environment.
+2. Install dependencies:
+   ```bash
+   pip install -r backend/singlecell_ai_insights/requirements.txt
+   ```
+   For local tooling (shell plus extras) you can also install:
+   ```bash
+   pip install -r backend/dev-requirements.txt
+   ```
+3. Copy the example environment file and adjust it for your setup:
+   ```bash
+   cp backend/singlecell_ai_insights/.env-example backend/singlecell_ai_insights/.env
+   ```
+   | Variable | Purpose |
+   | --- | --- |
+   | `DJANGO_SECRET_KEY` | Unique secret for Django cryptographic signing. |
+   | `DJANGO_DEBUG` | Enables Django debug mode when set to `True`. |
+   | `DJANGO_ALLOWED_HOSTS` | Comma-delimited hostnames the server will accept. |
+   | `DJANGO_CORS_ALLOWED_ORIGINS` | Origins allowed to access the API via browsers. |
+4. Apply migrations:
+   ```bash
+   python backend/manage.py migrate
+   ```
+5. Create an initial user (optional but handy for admin/browsable API access):
+   ```bash
+   python backend/manage.py createsuperuser
+   ```
+
+`boto3` automatically discovers AWS credentials from your environment (environment variables, shared credentials file, instance profile, and so on).
+
+## Running Locally
+Start the development server with:
+```bash
+python backend/manage.py runserver
+```
+
+The app serves the DRF browsable interface by default. Use the login link exposed through `rest_framework.urls` or obtain JWT tokens via the SimpleJWT endpoints listed in `backend/singlecell_ai_insights/urls.py` to access authenticated resources.
+
+## Testing
+Automated tests live under `backend/singlecell_ai_insights/tests/`. Run them with:
+```bash
+pytest backend/singlecell_ai_insights/tests
+```
+or using Django’s runner:
+```bash
+python backend/manage.py test
+```
+
+## Project Structure Highlights
+- `backend/singlecell_ai_insights/models/run.py` – persistence for cached HealthOmics runs.
+- `backend/singlecell_ai_insights/aws/` – integrations with AWS services (e.g., HealthOmics clients).
+- `backend/singlecell_ai_insights/api/` – DRF views, serializers, and URL configuration.
+- `docs/` – additional design notes and architecture references.

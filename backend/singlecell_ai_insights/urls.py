@@ -7,6 +7,8 @@ from rest_framework_simplejwt.views import (
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # Browseable api urls
+    path('api/browse-auth/', include('rest_framework.urls')),
     # Auth urls
     path(
         'api/auth/login/',
