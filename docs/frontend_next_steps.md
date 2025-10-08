@@ -4,7 +4,7 @@
 
 - [x] **Scaffold routing structure**: Add `src/routes.tsx` and empty page components `pages/LoginPage.tsx`, `pages/RunsPage.tsx`, `pages/RunDetailPage.tsx`.
 - [x] **Set up global providers**: Create `providers/AuthProvider.tsx` and `providers/QueryProvider.tsx`, then wrap them around `RouterProvider` in `src/main.tsx`.
-- [ ] **Seed API layer**: Introduce `api/client.ts`, `api/auth.ts`, and `api/runs.ts` with placeholder fetch helpers pointing at `/api/...` endpoints.
+- [x] **Seed API layer**: Introduce `api/client.ts`, `api/auth.ts`, and `api/runs.ts` with placeholder fetch helpers pointing at `/api/...` endpoints.
 - [ ] **Auth workflow skeleton**: Implement a basic `LoginPage` form that calls the auth client, stores tokens via context, and redirects to `/runs`.
 - [ ] **Shared layout**: Draft a shadcn-based `AppShell` (header + sidebar) to keep typography and spacing consistent across pages.
 
