@@ -6,11 +6,9 @@ type LoginRequest = {
 }
 
 type LoginResponse = {
-  access: string
-  refresh: string
   user: {
     email: string
-  }
+  } | null
 }
 
 async function login(credentials: LoginRequest) {
@@ -18,18 +16,23 @@ async function login(credentials: LoginRequest) {
     endpoint: "/auth/login/",
     method: "POST",
     body: credentials,
-    options: { skipAuth: true },
   })
 }
 
-async function refreshToken(refresh: string) {
-  return await requestJSON<{ access: string; refresh: string }>({
+async function refreshSession() {
+  return await requestJSON<{ detail: string }>({
     endpoint: "/auth/refresh/",
     method: "POST",
-    body: { refresh },
-    options: { skipAuth: true },
+    body: {},
   })
 }
 
-export { login, refreshToken }
+async function logout() {
+  return await requestJSON<undefined>({
+    endpoint: "/auth/logout/",
+    method: "POST",
+  })
+}
+
+export { login, refreshSession, logout }
 export type { LoginRequest, LoginResponse }

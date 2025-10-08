@@ -11,10 +11,9 @@ type RunSummary = {
   s3_report_key: string
 }
 
-async function listRuns(accessToken: string | null) {
+async function listRuns() {
   return await requestJSON<RunSummary[]>({
     endpoint: "/runs/",
-    accessToken,
   })
 }
 

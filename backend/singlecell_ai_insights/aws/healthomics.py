@@ -113,9 +113,6 @@ def list_runs() -> List[Dict[str, object]]:
                     }
                 )
     except (BotoCoreError, ClientError) as exc:
-        import pdb
-
-        pdb.set_trace()
         raise HealthOmicsClientError(
             'Unable to list HealthOmics runs'
         ) from exc

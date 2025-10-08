@@ -6,14 +6,8 @@ type AuthUser = {
 
 type AuthContextValue = {
   user: AuthUser
-  accessToken: string | null
-  refreshToken: string | null
   isAuthenticated: boolean
-  setSession: (input: {
-    user: AuthUser
-    accessToken: string | null
-    refreshToken: string | null
-  }) => void
+  setSession: (input: { user: AuthUser }) => void
   clearSession: () => void
 }
 

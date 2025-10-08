@@ -6,8 +6,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..aws import healthomics
-from ..models import Run
+from singlecell_ai_insights.aws import healthomics
+from singlecell_ai_insights.models.run import Run
+
 from .serializers import RunSerializer
 
 logger = logging.getLogger(__name__)

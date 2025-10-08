@@ -1,6 +1,6 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api"
 
-type RequestOptions = RequestInit & { skipAuth?: boolean }
+type RequestOptions = RequestInit
 
 type RequestInput = {
   endpoint: string
@@ -8,7 +8,6 @@ type RequestInput = {
   body?: unknown
   headers?: HeadersInit
   options?: RequestOptions
-  accessToken?: string | null
 }
 
 async function requestJSON<T>({
@@ -17,7 +16,6 @@ async function requestJSON<T>({
   body,
   headers,
   options,
-  accessToken,
 }: RequestInput): Promise<T> {
   const config: RequestInit = {
     method,
@@ -25,18 +23,12 @@ async function requestJSON<T>({
       "Content-Type": "application/json",
       ...headers,
     },
+    credentials: "include",
     ...options,
   }
 
   if (body !== undefined) {
     config.body = JSON.stringify(body)
-  }
-
-  if (accessToken && !options?.skipAuth) {
-    config.headers = {
-      ...config.headers,
-      Authorization: `Bearer ${accessToken}`,
-    }
   }
 
   const url = `${API_BASE_URL}${endpoint}`

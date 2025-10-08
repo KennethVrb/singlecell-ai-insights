@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from ..models import Run
+from singlecell_ai_insights.models.run import Run
 
 
 class RunSerializer(serializers.ModelSerializer):
