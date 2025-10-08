@@ -9,6 +9,6 @@ venv/
 .mypy_cache/
 .pytest_cache/
 .DS_Store/
-
+.ruff_cache/
 
 normalized_data/
