@@ -9,9 +9,12 @@ from datetime import timedelta
 from pathlib import Path
 
 import boto3
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv()
 
 
 def _env_bool(name, default):
@@ -177,6 +180,7 @@ SIMPLE_JWT = {
 }
 
 _env_cors_origins = os.getenv('DJANGO_CORS_ALLOWED_ORIGINS')
+
 CORS_ALLOWED_ORIGINS = (
     [
         origin.strip()

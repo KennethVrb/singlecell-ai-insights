@@ -1,12 +1,13 @@
 import { requestJSON } from "./client"
 
 type LoginRequest = {
-  email: string
+  username: string
   password: string
 }
 
 type LoginResponse = {
   user: {
+    username: string
     email: string
   } | null
 }

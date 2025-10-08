@@ -8,7 +8,10 @@ from rest_framework_simplejwt.serializers import (
 class CookieTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
-        data['user'] = {'email': self.user.email}
+        data['user'] = {
+            'username': self.user.username,
+            'email': self.user.email,
+        }
         return data
 
 

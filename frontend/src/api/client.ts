@@ -1,5 +1,16 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api"
 
+class ApiError extends Error {
+  status: number
+  data: unknown
+
+  constructor(status: number, message: string, data: unknown) {
+    super(message)
+    this.status = status
+    this.data = data
+  }
+}
+
 type RequestOptions = RequestInit
 
 type RequestInput = {
@@ -36,9 +47,8 @@ async function requestJSON<T>({
 
   if (!response.ok) {
     const detail = await safeReadJSON(response)
-    const message = detail?.detail ?? response.statusText
-    const error = new Error(message)
-    throw error
+    const message = getErrorMessage(detail, response.statusText)
+    throw new ApiError(response.status, message, detail)
   }
 
   if (response.status === 204) {
@@ -48,7 +58,18 @@ async function requestJSON<T>({
   return (await response.json()) as T
 }
 
-async function safeReadJSON(response: Response) {
+function getErrorMessage(detail: unknown, fallback: string) {
+  if (detail && typeof detail === "object" && "detail" in detail) {
+    const value = (detail as { detail?: unknown }).detail
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value
+    }
+  }
+
+  return fallback
+}
+
+async function safeReadJSON(response: Response): Promise<unknown> {
   try {
     return await response.json()
   } catch {
@@ -56,4 +77,4 @@ async function safeReadJSON(response: Response) {
   }
 }
 
-export { requestJSON }
+export { requestJSON, ApiError }

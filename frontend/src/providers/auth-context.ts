@@ -1,14 +1,18 @@
 import { createContext, useContext } from "react"
 
+import type { LoginRequest } from "@/api/auth"
+
 type AuthUser = {
+  username: string
   email: string
 } | null
 
 type AuthContextValue = {
   user: AuthUser
   isAuthenticated: boolean
-  setSession: (input: { user: AuthUser }) => void
-  clearSession: () => void
+  login: (credentials: LoginRequest) => Promise<void>
+  refreshSession: () => Promise<void>
+  logout: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
