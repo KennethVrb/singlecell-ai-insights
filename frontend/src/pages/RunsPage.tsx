@@ -2,8 +2,10 @@ import type { ReactNode } from "react"
 import { Link } from "react-router-dom"
 import { CheckCircle2, Clock3, TriangleAlert } from "lucide-react"
 
+import { useRunsQuery } from "@/api/runs"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Spinner } from "@/components/ui/spinner"
 import {
   Table,
   TableBody,
@@ -12,45 +14,80 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { cn } from "@/lib/utils"
 import { useAuth } from "@/providers/auth-context"
 
 function RunsPage() {
   const { user } = useAuth()
 
-  const placeholderRuns = [
-    {
-      id: "sample-run-id",
-      name: "SC-2319",
-      pipeline: "MultiQC",
-      status: "Succeeded",
-      samples: 24,
-      updatedAt: "2024-08-12",
-    },
-    {
-      id: "sample-run-id-2",
-      name: "SC-2320",
-      pipeline: "RNA-seq",
-      status: "Running",
-      samples: 18,
-      updatedAt: "2024-08-14",
-    },
-  ]
+  const { data: runs, isLoading, isFetching, isError, error, refetch } = useRunsQuery()
 
-  const statusVariants: Record<string, string> = {
-    Succeeded: "status-badge status-badge-success",
-    Running: "status-badge status-badge-warning",
-    Failed: "status-badge status-badge-error",
+  const statusConfig: Record<string, { className: string; icon: ReactNode }> = {
+    COMPLETED: {
+      className: "status-badge status-badge-success",
+      icon: <CheckCircle2 className="size-3.5" aria-hidden />,
+    },
+    SUCCEEDED: {
+      className: "status-badge status-badge-success",
+      icon: <CheckCircle2 className="size-3.5" aria-hidden />,
+    },
+    RUNNING: {
+      className: "status-badge status-badge-warning",
+      icon: <Clock3 className="size-3.5" aria-hidden />,
+    },
+    IN_PROGRESS: {
+      className: "status-badge status-badge-warning",
+      icon: <Clock3 className="size-3.5" aria-hidden />,
+    },
+    FAILED: {
+      className: "status-badge status-badge-error",
+      icon: <TriangleAlert className="size-3.5" aria-hidden />,
+    },
+    ERROR: {
+      className: "status-badge status-badge-error",
+      icon: <TriangleAlert className="size-3.5" aria-hidden />,
+    },
   }
 
-  const statusIcons: Record<string, ReactNode> = {
-    Succeeded: <CheckCircle2 className="size-3.5" aria-hidden />,
-    Running: <Clock3 className="size-3.5" aria-hidden />,
-    Failed: <TriangleAlert className="size-3.5" aria-hidden />,
+  const runItems = runs ?? []
+
+  const formatStatus = (status: string) => {
+    if (!status) {
+      return "Unknown"
+    }
+
+    return status
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .replace(/(^|\s)\w/g, (match) => match.toUpperCase())
   }
 
-  const getStatusBadgeClasses = (status: string) =>
-    cn(statusVariants[status] ?? "status-badge status-badge-muted")
+  const renderStatusBadge = (status: string) => {
+    const key = status?.toUpperCase() ?? ""
+    const config = statusConfig[key]
+
+    return (
+      <span className={config?.className}>
+        {config?.icon}
+        {formatStatus(status)}
+      </span>
+    )
+  }
+
+  const formatDateTime = (value?: string | null) => {
+    if (!value) {
+      return "—"
+    }
+
+    const parsed = new Date(value)
+    if (Number.isNaN(parsed.getTime())) {
+      return "—"
+    }
+
+    return parsed.toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    })
+  }
 
   return (
     <div className="space-y-8">
@@ -60,12 +97,26 @@ function RunsPage() {
           Review recent sequencing runs, inspect MultiQC metrics, and open detailed views for deeper
           analysis.
         </p>
+        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch({ cancelRefetch: false })}
+            disabled={isFetching}
+          >
+            {isFetching ? <Spinner className="mr-2" /> : null}
+            Refresh runs
+          </Button>
+          <span>{runItems.length} runs</span>
+        </div>
       </header>
 
-      <section className="rounded-lg border border-dashed border-border bg-card p-4 text-sm text-muted-foreground">
-        The table below illustrates the future runs list. Once `useRuns` is wired to `/api/runs/`,
-        replace the placeholder data with real records and add sorting or filtering as needed.
-      </section>
+      {isError ? (
+        <section className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+          {(error instanceof Error ? error.message : "Unable to load runs.") ??
+            "Unable to load runs."}
+        </section>
+      ) : null}
 
       <div className="hidden overflow-x-auto rounded-lg border border-border bg-card shadow-sm md:block">
         <Table className="min-w-[720px] text-sm">
@@ -74,64 +125,99 @@ function RunsPage() {
               <TableHead className="px-4 py-3">Run</TableHead>
               <TableHead className="px-4 py-3">Pipeline</TableHead>
               <TableHead className="px-4 py-3">Status</TableHead>
-              <TableHead className="px-4 py-3">Samples</TableHead>
-              <TableHead className="px-4 py-3">Updated</TableHead>
+              <TableHead className="px-4 py-3">Created</TableHead>
+              <TableHead className="px-4 py-3">Completed</TableHead>
               <TableHead className="px-4 py-3 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {placeholderRuns.map((run) => (
-              <TableRow key={run.id}>
-                <TableCell className="px-4 py-4 font-medium text-foreground">{run.name}</TableCell>
-                <TableCell className="px-4 py-4 text-muted-foreground">{run.pipeline}</TableCell>
-                <TableCell className="px-4 py-4">
-                  <span className={getStatusBadgeClasses(run.status)}>
-                    {statusIcons[run.status]}
-                    {run.status}
-                  </span>
-                </TableCell>
-                <TableCell className="px-4 py-4 text-muted-foreground">{run.samples}</TableCell>
-                <TableCell className="px-4 py-4 text-muted-foreground">{run.updatedAt}</TableCell>
-                <TableCell className="px-4 py-4 text-right">
-                  <Button variant="brand" size="sm" asChild>
-                    <Link to={`/runs/${run.id}`}>Open</Link>
-                  </Button>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
+                  <div className="flex items-center justify-center gap-2">
+                    <Spinner />
+                    <span>Loading runs…</span>
+                  </div>
                 </TableCell>
               </TableRow>
-            ))}
+            ) : runItems.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
+                  No runs available yet. Try refreshing or check back later.
+                </TableCell>
+              </TableRow>
+            ) : (
+              runItems.map((run) => (
+                <TableRow key={run.run_id}>
+                  <TableCell className="px-4 py-4 font-medium text-foreground">
+                    {run.name || run.run_id}
+                  </TableCell>
+                  <TableCell className="px-4 py-4 text-muted-foreground">
+                    {run.pipeline || "—"}
+                  </TableCell>
+                  <TableCell className="px-4 py-4">{renderStatusBadge(run.status)}</TableCell>
+                  <TableCell className="px-4 py-4 text-muted-foreground">
+                    {formatDateTime(run.created_at)}
+                  </TableCell>
+                  <TableCell className="px-4 py-4 text-muted-foreground">
+                    {formatDateTime(run.completed_at)}
+                  </TableCell>
+                  <TableCell className="px-4 py-4 text-right">
+                    <Button variant="brand" size="sm" asChild>
+                      <Link to={`/runs/${run.pk}`}>Open</Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
 
       <div className="grid gap-4 md:hidden">
-        {placeholderRuns.map((run) => (
-          <Card key={run.id} className="border border-dashed">
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-base">{run.name}</CardTitle>
-              <CardDescription>{run.pipeline}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-muted-foreground">
-              <div className="flex items-center justify-between">
-                <span>Status</span>
-                <span className={getStatusBadgeClasses(run.status)}>{run.status}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Samples</span>
-                <span>{run.samples}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Updated</span>
-                <span>{run.updatedAt}</span>
-              </div>
-              {user ? (
-                <p className="text-xs text-muted-foreground/80">Signed in as {user.username}</p>
-              ) : null}
-              <Button variant="secondary" className="w-full" asChild>
-                <Link to={`/runs/${run.id}`}>Open run</Link>
-              </Button>
+        {isLoading ? (
+          <Card className="border border-dashed">
+            <CardContent className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Spinner />
+              Loading runs…
             </CardContent>
           </Card>
-        ))}
+        ) : runItems.length === 0 ? (
+          <Card className="border border-dashed">
+            <CardContent className="text-sm text-muted-foreground">
+              No runs available yet. Pull to refresh or revisit soon.
+            </CardContent>
+          </Card>
+        ) : (
+          runItems.map((run) => (
+            <Card key={run.run_id} className="border border-dashed">
+              <CardHeader className="space-y-1">
+                <CardTitle className="text-base">{run.name || run.run_id}</CardTitle>
+                <CardDescription>{run.pipeline || "—"}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                <div className="flex items-center justify-between">
+                  <span>Status</span>
+                  {renderStatusBadge(run.status)}
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Created</span>
+                  <span>{formatDateTime(run.created_at)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Completed</span>
+                  <span>{formatDateTime(run.completed_at)}</span>
+                </div>
+                {user ? (
+                  <p className="text-xs text-muted-foreground/80">Signed in as {user.username}</p>
+                ) : null}
+                <Button variant="secondary" className="w-full" asChild>
+                  <Link to={`/runs/${run.pk}`}>Open run</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   )

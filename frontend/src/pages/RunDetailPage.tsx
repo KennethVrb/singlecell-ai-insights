@@ -1,10 +1,14 @@
 import { Link, useParams } from "react-router-dom"
 
+import { useRunQuery } from "@/api/runs"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Spinner } from "@/components/ui/spinner"
 
 function RunDetailPage() {
   const { runId } = useParams<{ runId: string }>()
+  const numericRunId = runId ? Number.parseInt(runId, 10) : NaN
+  const { data: run, isLoading, isError, error, refetch, isFetching } = useRunQuery(numericRunId)
 
   return (
     <div className="space-y-8">
@@ -21,36 +25,95 @@ function RunDetailPage() {
             <Button variant="outline" asChild>
               <Link to="/runs">Back to runs</Link>
             </Button>
-            <Button disabled variant="brand">
-              Download MultiQC
+            <Button disabled={!run?.s3_report_key} variant="brand">
+              {run?.s3_report_key ? "Download MultiQC" : "Download unavailable"}
             </Button>
           </div>
         </div>
       </header>
+
+      {isError ? (
+        <Card className="border border-destructive/40 bg-destructive/5">
+          <CardContent className="flex items-center justify-between gap-2 py-6 text-destructive">
+            <p>{error instanceof Error ? error.message : "Unable to load run."}</p>
+            <Button
+              variant="outline"
+              onClick={() => refetch({ cancelRefetch: false })}
+              disabled={isFetching}
+            >
+              {isFetching ? <Spinner className="mr-2" /> : null}
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.35fr)_minmax(0,1fr)]">
         <section className="space-y-6">
           <Card className="border">
             <CardHeader>
               <CardTitle>Run overview</CardTitle>
-              <CardDescription>Metadata, pipeline, and QC status will render here.</CardDescription>
+              <CardDescription>
+                {run?.pipeline
+                  ? `Pipeline ${run.pipeline} status ${run.status || "unknown"}`
+                  : "Metadata will populate once available."}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-muted-foreground">
-              <p>Hook `useRun` to fetch metrics, timestamps, and AWS provenance.</p>
-              <p>Surface summary KPI badges (pass/fail, warnings, total samples).</p>
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <Spinner />
+                  <span>Loading run…</span>
+                </div>
+              ) : run ? (
+                <div className="space-y-2">
+                  <p>
+                    <span className="font-medium text-foreground">Run ID:</span> {run.run_id}
+                  </p>
+                  <p>
+                    <span className="font-medium text-foreground">Status:</span>{" "}
+                    {run.status || "Unknown"}
+                  </p>
+                  <p>
+                    <span className="font-medium text-foreground">Created:</span>{" "}
+                    {run.created_at ? new Date(run.created_at).toLocaleString() : "—"}
+                  </p>
+                  <p>
+                    <span className="font-medium text-foreground">Completed:</span>{" "}
+                    {run.completed_at ? new Date(run.completed_at).toLocaleString() : "—"}
+                  </p>
+                </div>
+              ) : (
+                <p>Run metadata not available yet. Try refreshing.</p>
+              )}
             </CardContent>
           </Card>
 
           <Card className="border">
             <CardHeader>
               <CardTitle>Run metrics</CardTitle>
-              <CardDescription>Tabs for summary, samples, and quality tables.</CardDescription>
+              <CardDescription>
+                {run?.normalized_context
+                  ? "Normalized context ready for visualization."
+                  : "Tabs for summary, samples, and quality tables."}
+              </CardDescription>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
-              <p>
-                Integrate `RunMetricsTabs` once the normalization helpers are available. Each tab
-                can reuse shadcn tables or charts depending on data.
-              </p>
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <Spinner />
+                  <span>Loading normalized context…</span>
+                </div>
+              ) : run?.normalized_context ? (
+                <pre className="max-h-64 overflow-auto rounded bg-muted p-3 text-xs">
+                  {JSON.stringify(run.normalized_context, null, 2)}
+                </pre>
+              ) : (
+                <p>
+                  Normalized context is not yet available. Trigger normalization via the backend or
+                  rerun HealthOmics sync.
+                </p>
+              )}
             </CardContent>
           </Card>
         </section>
