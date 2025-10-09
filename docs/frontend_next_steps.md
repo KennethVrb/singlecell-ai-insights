@@ -7,7 +7,7 @@
 - [x] **Seed API layer**: Introduce `api/client.ts`, `api/auth.ts`, and `api/runs.ts` with placeholder fetch helpers pointing at `/api/...` endpoints.
 - [x] **Auth workflow skeleton**: Connect `LoginPage` to `api/auth.login()` (which already uses the shared `requestJSON` client with cookies). On success, set the `AuthProvider` state from the returned `user`, persist navigation to `/runs`, and surface loading/error UI. Expand the provider to expose `refreshSession` and `logout` hooks that call `api/auth.refreshSession()`/`api/auth.logout()`, keep cookies on the wire, and clear context state on 401s or logout.
 - [x] **User not authenticated on page refresh**: investigate why the `AuthProvider` state is not persisted on page refresh. i can login but after page refresh im redirecting back to login page
-- [ ] **Shared layout**: Draft a shadcn-based `AppShell` (header + sidebar) to keep typography and spacing consistent across pages.
+- [x] **Shared layout**: Draft a shadcn-based `AppShell` (header + sidebar) to keep typography and spacing consistent across pages.
 
 ## Follow-Up Considerations
 

@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { cn } from "@/lib/utils"
 import { useAuth } from "@/providers/auth-context"
 
 function RunsPage() {
@@ -33,6 +34,18 @@ function RunsPage() {
       updatedAt: "2024-08-14",
     },
   ]
+
+  const statusVariants: Record<string, string> = {
+    Succeeded: "bg-emerald-500/10 text-emerald-300 border border-emerald-500/30",
+    Running: "bg-amber-500/10 text-amber-300 border border-amber-500/30",
+    Failed: "bg-rose-500/10 text-rose-300 border border-rose-500/30",
+  }
+
+  const getStatusBadgeClasses = (status: string) =>
+    cn(
+      "rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-wide",
+      statusVariants[status] ?? "bg-muted text-muted-foreground border border-border/70",
+    )
 
   return (
     <div className="space-y-8">
@@ -67,9 +80,7 @@ function RunsPage() {
                 <TableCell className="px-4 py-4 font-medium text-foreground">{run.name}</TableCell>
                 <TableCell className="px-4 py-4 text-muted-foreground">{run.pipeline}</TableCell>
                 <TableCell className="px-4 py-4">
-                  <span className="rounded-full bg-muted px-2 py-1 text-xs font-medium">
-                    {run.status}
-                  </span>
+                  <span className={getStatusBadgeClasses(run.status)}>{run.status}</span>
                 </TableCell>
                 <TableCell className="px-4 py-4 text-muted-foreground">{run.samples}</TableCell>
                 <TableCell className="px-4 py-4 text-muted-foreground">{run.updatedAt}</TableCell>
@@ -94,9 +105,7 @@ function RunsPage() {
             <CardContent className="space-y-3 text-sm text-muted-foreground">
               <div className="flex items-center justify-between">
                 <span>Status</span>
-                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-foreground">
-                  {run.status}
-                </span>
+                <span className={getStatusBadgeClasses(run.status)}>{run.status}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Samples</span>
