@@ -1,48 +1,59 @@
-import { useCallback } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
-import { ApiError } from "@/api/client"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth } from "@/providers/auth-context"
 
 function RunsPage() {
-  const navigate = useNavigate()
-  const { user, logout } = useAuth()
-
-  const handleLogout = useCallback(async () => {
-    try {
-      await logout()
-    } catch (error) {
-      if (error instanceof ApiError && error.status !== 401) {
-        console.error("Logout failed", error)
-      }
-    } finally {
-      navigate("/login", { replace: true })
-    }
-  }, [logout, navigate])
+  const { user } = useAuth()
 
   return (
-    <main className="flex min-h-screen flex-col items-center gap-8 bg-background px-8 py-16 text-foreground">
-      <header className="space-y-2 text-center">
-        <h1 className="text-3xl font-semibold">HealthOmics Runs</h1>
+    <div className="space-y-8">
+      <header className="space-y-2">
+        <h1 className="text-3xl font-semibold">HealthOmics runs</h1>
         <p className="text-muted-foreground">
-          Replace this placeholder with the run list once the backend endpoints are connected.
+          Review recent sequencing runs, inspect MultiQC metrics, and open detailed views for deeper
+          analysis.
         </p>
       </header>
 
-      <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
-        {user ? <p>Signed in as {user.username}</p> : <p>You are not signed in.</p>}
-      </div>
+      <section className="rounded-lg border border-dashed border-border bg-card p-4 text-sm text-muted-foreground">
+        The run list will appear here once React Query hooks are wired to `/api/runs/`. Each entry
+        will include status, pipeline, and quick actions for downloads and chat.
+      </section>
 
-      <div className="flex gap-4">
-        <Button variant="secondary" asChild>
-          <Link to="/runs/sample-run-id">View example run</Link>
-        </Button>
-        <Button variant="outline" onClick={handleLogout}>
-          Sign out
-        </Button>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="border-dashed">
+          <CardHeader>
+            <CardTitle>Sample run</CardTitle>
+            <CardDescription>
+              Navigate to a placeholder detail view to explore the layout.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              <p>Additional metadata cards will render in this slot.</p>
+              {user ? <p className="mt-2">Signed in as {user.username}</p> : null}
+            </div>
+            <Button variant="secondary" asChild>
+              <Link to="/runs/sample-run-id">Open example</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="border-dashed">
+          <CardHeader>
+            <CardTitle>Next steps</CardTitle>
+            <CardDescription>Coming enhancements for this view.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
+            <p>• Hook `useRuns` to backend pagination and filters.</p>
+            <p>• Surface run health indicators and quick download buttons.</p>
+            <p>• Add faceted filtering by pipeline, status, or assay.</p>
+          </CardContent>
+        </Card>
       </div>
-    </main>
+    </div>
   )
 }
 

@@ -1,6 +1,7 @@
-import { Navigate, Outlet, useLocation } from "react-router-dom"
+import { Navigate, useLocation } from "react-router-dom"
 
 import { AuthLoadingScreen } from "@/components/AuthLoadingScreen"
+import { AppShellLayout } from "@/components/AppShell"
 import { useAuth } from "@/providers/auth-context"
 
 function ProtectedRoute() {
@@ -15,7 +16,7 @@ function ProtectedRoute() {
     return <Navigate to="/login" replace state={{ from: location }} />
   }
 
-  return <Outlet />
+  return <AppShellLayout />
 }
 
 export default ProtectedRoute
