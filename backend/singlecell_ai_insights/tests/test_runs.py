@@ -76,14 +76,10 @@ class RunEndpointTests(APITestCase):
             type='READY2RUN',
         )
         self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['run_id'], 'run-123')
+        created_run = Run.objects.get(run_id='run-123')
+        self.assertEqual(response.data[0]['pk'], created_run.pk)
         self.assertEqual(response.data[0]['pipeline'], 'Example Workflow')
-        self.assertTrue(
-            Run.objects.filter(run_id='run-123', name='Example Run').exists()
-        )
-        self.assertEqual(
-            Run.objects.get(run_id='run-123').pipeline, 'Example Workflow'
-        )
+        self.assertEqual(created_run.pipeline, 'Example Workflow')
 
     def test_refresh_parameter_forces_update(self):
         self.authenticate()
@@ -127,11 +123,7 @@ class RunEndpointTests(APITestCase):
             response.data['detail'],
             'Unable to retrieve runs from HealthOmics.',
         )
-        self.assertTrue(
-            Run.objects.filter(
-                run_id=run.run_id, name='Cached Run', status='COMPLETED'
-            ).exists()
-        )
+        self.assertTrue(Run.objects.filter(pk=run.pk).exists())
 
     def test_returns_error_when_refresh_fails_without_cache(self):
         self.authenticate()
@@ -148,3 +140,23 @@ class RunEndpointTests(APITestCase):
             response.data['detail'],
             'Unable to retrieve runs from HealthOmics.',
         )
+
+    def test_run_detail_view(self):
+        self.authenticate()
+        run = Run.objects.create(
+            run_id='run-123',
+            name='Example Run',
+            status='COMPLETED',
+            pipeline='wf',
+            created_at=timezone.now(),
+        )
+
+        response = self.client.get(f'/api/runs/{run.pk}/')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['run_id'], run.run_id)
+        self.assertEqual(response.data['name'], run.name)
+        self.assertEqual(response.data['status'], run.status)
+        self.assertEqual(response.data['pipeline'], run.pipeline)
+        self.assertEqual(response.data['s3_report_key'], run.s3_report_key)
+        self.assertEqual(response.data['metadata'], run.metadata)

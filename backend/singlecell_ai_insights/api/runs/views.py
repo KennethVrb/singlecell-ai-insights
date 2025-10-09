@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from singlecell_ai_insights.aws import healthomics
 from singlecell_ai_insights.models.run import Run
 
-from .serializers import RunSerializer
+from .serializers import RunSerializer, RunSummarySerializer
 
 logger = logging.getLogger(__name__)
 
@@ -49,5 +49,20 @@ class RunListView(APIView):
 
         queryset = Run.objects.all()
 
-        data = RunSerializer(queryset, many=True).data
+        data = RunSummarySerializer(queryset, many=True).data
+        return Response(data)
+
+
+class RunDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            run = Run.objects.get(pk=pk)
+        except Run.DoesNotExist:
+            return Response(
+                {'detail': 'Run not found.'}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        data = RunSerializer(run).data
         return Response(data)

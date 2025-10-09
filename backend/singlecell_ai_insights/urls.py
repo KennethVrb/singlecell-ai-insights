@@ -8,7 +8,7 @@ from singlecell_ai_insights.api.auth import (
     MeView,
 )
 from singlecell_ai_insights.api.health import health_check
-from singlecell_ai_insights.api.runs import RunListView
+from singlecell_ai_insights.api.runs import RunDetailView, RunListView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -30,4 +30,5 @@ urlpatterns = [
     # API urls
     path('api/health/', health_check, name='health'),
     path('api/runs/', RunListView.as_view(), name='run-list'),
+    path('api/runs/<int:pk>/', RunDetailView.as_view(), name='run-detail'),
 ]
