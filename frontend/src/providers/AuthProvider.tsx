@@ -1,17 +1,20 @@
-import { type ReactNode, useCallback, useMemo, useState } from "react"
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react"
 
 import { ApiError } from "@/api/client"
 import {
   logout as logoutRequest,
   login as loginRequest,
   refreshSession as refreshSessionRequest,
+  me as sessionRequest,
   type LoginRequest,
+  type User,
 } from "@/api/auth"
 
-import { AuthContext, type AuthContextValue, type AuthUser } from "./auth-context"
+import { AuthContext, type AuthContextValue } from "./auth-context"
 
 function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser>(null)
+  const [user, setUser] = useState<User | null>(null)
+  const [isBootstrapping, setIsBootstrapping] = useState(true)
 
   const login = useCallback(async (credentials: LoginRequest) => {
     const response = await loginRequest(credentials)
@@ -52,15 +55,49 @@ function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }, [])
 
+  useEffect(() => {
+    let isMounted = true
+
+    async function checkAuthState() {
+      try {
+        const response = await sessionRequest()
+        if (isMounted) {
+          setUser(response.user)
+        }
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 401) {
+          if (isMounted) {
+            setUser(null)
+          }
+          return
+        }
+        if (isMounted) {
+          setUser(null)
+        }
+      } finally {
+        if (isMounted) {
+          setIsBootstrapping(false)
+        }
+      }
+    }
+
+    void checkAuthState()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   const value = useMemo<AuthContextValue>(() => {
     return {
       user,
       isAuthenticated: Boolean(user),
+      isBootstrapping,
       login,
       refreshSession,
       logout,
     }
-  }, [logout, login, refreshSession, user])
+  }, [isBootstrapping, logout, login, refreshSession, user])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

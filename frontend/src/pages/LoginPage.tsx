@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 
+import { AuthLoadingScreen } from "@/components/AuthLoadingScreen"
 import { Button } from "@/components/ui/button"
 import { ApiError } from "@/api/client"
 import { useAuth } from "@/providers/auth-context"
 
 function LoginPage() {
   const navigate = useNavigate()
-  const { login, isAuthenticated } = useAuth()
+  const { login, isAuthenticated, isBootstrapping } = useAuth()
 
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
@@ -19,6 +20,10 @@ function LoginPage() {
       navigate("/runs", { replace: true })
     }
   }, [isAuthenticated, navigate])
+
+  if (isBootstrapping) {
+    return <AuthLoadingScreen />
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()

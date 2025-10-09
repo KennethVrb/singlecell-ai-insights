@@ -5,11 +5,17 @@ type LoginRequest = {
   password: string
 }
 
+type User = {
+  username: string
+  email: string
+}
+
 type LoginResponse = {
-  user: {
-    username: string
-    email: string
-  } | null
+  user: User | null
+}
+
+type SessionResponse = {
+  user: User
 }
 
 async function login(credentials: LoginRequest) {
@@ -28,6 +34,13 @@ async function refreshSession() {
   })
 }
 
+async function me() {
+  return await requestJSON<SessionResponse>({
+    endpoint: "/auth/me/",
+    method: "GET",
+  })
+}
+
 async function logout() {
   return await requestJSON<undefined>({
     endpoint: "/auth/logout/",
@@ -35,5 +48,5 @@ async function logout() {
   })
 }
 
-export { login, refreshSession, logout }
-export type { LoginRequest, LoginResponse }
+export { login, refreshSession, me, logout }
+export type { User, LoginRequest, LoginResponse, SessionResponse }

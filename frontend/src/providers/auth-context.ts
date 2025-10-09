@@ -1,15 +1,11 @@
 import { createContext, useContext } from "react"
 
-import type { LoginRequest } from "@/api/auth"
-
-type AuthUser = {
-  username: string
-  email: string
-} | null
+import type { User, LoginRequest } from "@/api/auth"
 
 type AuthContextValue = {
-  user: AuthUser
+  user: User | null
   isAuthenticated: boolean
+  isBootstrapping: boolean
   login: (credentials: LoginRequest) => Promise<void>
   refreshSession: () => Promise<void>
   logout: () => Promise<void>
@@ -28,4 +24,4 @@ function useAuth() {
 }
 
 export { AuthContext, useAuth }
-export type { AuthContextValue, AuthUser }
+export type { AuthContextValue }
