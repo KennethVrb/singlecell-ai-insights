@@ -147,6 +147,44 @@
   body {
     @apply bg-background text-foreground;
   }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: inherit;
+    @apply text-foreground antialiased;
+  }
+
+  h1 {
+    @apply text-3xl font-semibold tracking-tight leading-tight md:text-4xl;
+  }
+
+  h2 {
+    @apply text-2xl font-semibold tracking-tight leading-snug md:text-3xl;
+  }
+
+  h3 {
+    @apply text-xl font-medium tracking-wide uppercase text-muted-foreground md:text-2xl;
+    letter-spacing: 0.18em;
+  }
+
+  h4 {
+    @apply text-lg font-medium tracking-normal;
+  }
+
+  p {
+    @apply leading-relaxed text-muted-foreground;
+  }
+
+  small {
+    @apply text-xs font-medium tracking-wide text-muted-foreground/80;
+  }
+
+  strong {
+    @apply font-semibold text-foreground;
+  }
 }
 
 @layer utilities {

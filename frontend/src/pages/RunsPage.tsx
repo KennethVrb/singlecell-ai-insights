@@ -55,7 +55,7 @@ function RunsPage() {
   return (
     <div className="space-y-8">
       <header className="space-y-2">
-        <h1 className="text-3xl font-semibold">HealthOmics runs</h1>
+        <h1>HealthOmics runs</h1>
         <p className="text-muted-foreground">
           Review recent sequencing runs, inspect MultiQC metrics, and open detailed views for deeper
           analysis.

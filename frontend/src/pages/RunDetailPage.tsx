@@ -11,7 +11,7 @@ function RunDetailPage() {
       <header className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-semibold">Run detail</h1>
+            <h1>Run detail</h1>
             <p className="text-muted-foreground">
               Inspect normalized MultiQC metrics, contextual summaries, and chat history for run
               <span className="font-medium text-foreground"> {runId ?? "unknown"}</span>.
