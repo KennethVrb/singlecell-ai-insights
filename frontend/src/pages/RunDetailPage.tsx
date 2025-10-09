@@ -21,7 +21,7 @@ function RunDetailPage() {
             <Button variant="outline" asChild>
               <Link to="/runs">Back to runs</Link>
             </Button>
-            <Button disabled variant="default">
+            <Button disabled variant="brand">
               Download MultiQC
             </Button>
           </div>

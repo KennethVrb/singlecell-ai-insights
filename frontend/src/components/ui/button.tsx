@@ -17,6 +17,8 @@ const buttonVariants = cva(
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
+        brand:
+          "bg-[color:var(--brand)] text-brand-foreground shadow-[0_12px_28px_-16px_color-mix(in_oklch,var(--brand)_60%,transparent)] hover:bg-[color-mix(in_oklch,var(--brand)_88%,black)] focus-visible:border-transparent focus-visible:ring-[color-mix(in_oklch,var(--brand)_55%,transparent)] focus-visible:ring-offset-2 focus-visible:ring-offset-background",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",

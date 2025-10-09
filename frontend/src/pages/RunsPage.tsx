@@ -1,4 +1,6 @@
+import type { ReactNode } from "react"
 import { Link } from "react-router-dom"
+import { CheckCircle2, Clock3, TriangleAlert } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -36,16 +38,19 @@ function RunsPage() {
   ]
 
   const statusVariants: Record<string, string> = {
-    Succeeded: "bg-emerald-500/10 text-emerald-300 border border-emerald-500/30",
-    Running: "bg-amber-500/10 text-amber-300 border border-amber-500/30",
-    Failed: "bg-rose-500/10 text-rose-300 border border-rose-500/30",
+    Succeeded: "status-badge status-badge-success",
+    Running: "status-badge status-badge-warning",
+    Failed: "status-badge status-badge-error",
+  }
+
+  const statusIcons: Record<string, ReactNode> = {
+    Succeeded: <CheckCircle2 className="size-3.5" aria-hidden />,
+    Running: <Clock3 className="size-3.5" aria-hidden />,
+    Failed: <TriangleAlert className="size-3.5" aria-hidden />,
   }
 
   const getStatusBadgeClasses = (status: string) =>
-    cn(
-      "rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-wide",
-      statusVariants[status] ?? "bg-muted text-muted-foreground border border-border/70",
-    )
+    cn(statusVariants[status] ?? "status-badge status-badge-muted")
 
   return (
     <div className="space-y-8">
@@ -80,12 +85,15 @@ function RunsPage() {
                 <TableCell className="px-4 py-4 font-medium text-foreground">{run.name}</TableCell>
                 <TableCell className="px-4 py-4 text-muted-foreground">{run.pipeline}</TableCell>
                 <TableCell className="px-4 py-4">
-                  <span className={getStatusBadgeClasses(run.status)}>{run.status}</span>
+                  <span className={getStatusBadgeClasses(run.status)}>
+                    {statusIcons[run.status]}
+                    {run.status}
+                  </span>
                 </TableCell>
                 <TableCell className="px-4 py-4 text-muted-foreground">{run.samples}</TableCell>
                 <TableCell className="px-4 py-4 text-muted-foreground">{run.updatedAt}</TableCell>
                 <TableCell className="px-4 py-4 text-right">
-                  <Button variant="secondary" size="sm" asChild>
+                  <Button variant="brand" size="sm" asChild>
                     <Link to={`/runs/${run.id}`}>Open</Link>
                   </Button>
                 </TableCell>
