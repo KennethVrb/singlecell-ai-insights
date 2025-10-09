@@ -17,8 +17,8 @@ function RunDetailPage() {
           <div>
             <h1>Run detail</h1>
             <p className="text-muted-foreground">
-              Inspect normalized MultiQC metrics, contextual summaries, and chat history for run
-              <span className="font-medium text-foreground"> {runId ?? "unknown"}</span>.
+              Inspect run details, normalized MultiQC metrics, and chat history for run{" "}
+              <span className="font-medium text-foreground"> {run?.name ?? "unknown"}</span>.
             </p>
           </div>
           <div className="flex gap-2">
@@ -53,11 +53,7 @@ function RunDetailPage() {
           <Card className="border">
             <CardHeader>
               <CardTitle>Run overview</CardTitle>
-              <CardDescription>
-                {run?.pipeline
-                  ? `Pipeline ${run.pipeline} status ${run.status || "unknown"}`
-                  : "Metadata will populate once available."}
-              </CardDescription>
+              <CardDescription>Run details and status.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-muted-foreground">
               {isLoading ? (
@@ -66,9 +62,12 @@ function RunDetailPage() {
                   <span>Loading run…</span>
                 </div>
               ) : run ? (
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <p>
-                    <span className="font-medium text-foreground">Run ID:</span> {run.run_id}
+                    <span className="font-medium text-foreground">Name:</span> {run.name}
+                  </p>
+                  <p>
+                    <span className="font-medium text-foreground">Pipeline:</span> {run.pipeline}
                   </p>
                   <p>
                     <span className="font-medium text-foreground">Status:</span>{" "}
