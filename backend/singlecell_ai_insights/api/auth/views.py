@@ -35,6 +35,13 @@ def _delete_cookie(response, name, path):
         response.delete_cookie(name, path=path)
 
 
+def _serialize_user(user):
+    return {
+        'username': user.username,
+        'email': user.email,
+    }
+
+
 class CookieMixin:
     def set_token_cookies(self, response, access, refresh):
         if access:
@@ -128,3 +135,10 @@ class LogoutView(CookieMixin, APIView):
         response = Response(status=status.HTTP_204_NO_CONTENT)
         self.clear_token_cookies(response)
         return response
+
+
+class MeView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        return Response({'user': _serialize_user(request.user)})

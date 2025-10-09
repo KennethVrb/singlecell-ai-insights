@@ -113,3 +113,31 @@ class AuthEndpointTests(APITestCase):
             int(logout_response.cookies[refresh_cookie]['max-age']),
             0,
         )
+
+    def test_me_returns_user_when_authenticated(self):
+        self.client.post(
+            '/api/auth/login/',
+            {'username': 'tester', 'password': 'strong-pass'},
+            format='json',
+        )
+
+        response = self.client.get('/api/auth/me/')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data,
+            {
+                'user': {
+                    'username': 'tester',
+                    'email': 'tester@example.com',
+                }
+            },
+        )
+
+    def test_me_requires_authentication(self):
+        response = self.client.get('/api/auth/me/')
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )

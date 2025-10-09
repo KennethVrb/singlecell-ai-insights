@@ -5,6 +5,7 @@ from singlecell_ai_insights.api.auth import (
     CookieTokenObtainPairView,
     CookieTokenRefreshView,
     LogoutView,
+    MeView,
 )
 from singlecell_ai_insights.api.health import health_check
 from singlecell_ai_insights.api.runs import RunListView
@@ -25,6 +26,7 @@ urlpatterns = [
         name='token_refresh',
     ),
     path('api/auth/logout/', LogoutView.as_view(), name='token_logout'),
+    path('api/auth/me/', MeView.as_view(), name='auth_me'),
     # API urls
     path('api/health/', health_check, name='health'),
     path('api/runs/', RunListView.as_view(), name='run-list'),
