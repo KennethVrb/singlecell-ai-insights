@@ -30,7 +30,7 @@ function RunDetailPage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.35fr)_minmax(0,1fr)]">
         <section className="space-y-6">
-          <Card className="border-dashed">
+          <Card className="border">
             <CardHeader>
               <CardTitle>Run overview</CardTitle>
               <CardDescription>Metadata, pipeline, and QC status will render here.</CardDescription>
@@ -41,7 +41,7 @@ function RunDetailPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-dashed">
+          <Card className="border">
             <CardHeader>
               <CardTitle>Run metrics</CardTitle>
               <CardDescription>Tabs for summary, samples, and quality tables.</CardDescription>
@@ -56,7 +56,7 @@ function RunDetailPage() {
         </section>
 
         <aside>
-          <Card className="border-dashed h-full">
+          <Card className="border h-full">
             <CardHeader>
               <CardTitle>Chat activity</CardTitle>
               <CardDescription>Claude conversation surface.</CardDescription>
