@@ -232,12 +232,6 @@
     color: var(--muted-foreground);
   }
 
-  .brand-surface-soft {
-    background-color: color-mix(in oklch, var(--brand) 14%, transparent);
-    border-color: color-mix(in oklch, var(--brand) 42%, transparent);
-    color: var(--brand-foreground);
-  }
-
   .text-brand-foreground {
     color: var(--brand-foreground);
   }
