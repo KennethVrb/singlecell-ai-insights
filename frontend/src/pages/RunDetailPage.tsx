@@ -2,7 +2,6 @@ import { Link, useParams } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 
 function RunDetailPage() {
   const { runId } = useParams<{ runId: string }>()
@@ -29,7 +28,7 @@ function RunDetailPage() {
         </div>
       </header>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,0.35fr)_minmax(0,1fr)]">
         <section className="space-y-6">
           <Card className="border-dashed">
             <CardHeader>
@@ -56,25 +55,8 @@ function RunDetailPage() {
           </Card>
         </section>
 
-        <aside className="space-y-6">
-          <Card className="border-dashed">
-            <CardHeader>
-              <CardTitle>Context summary</CardTitle>
-              <CardDescription>High-level synopsis of MultiQC insights.</CardDescription>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground space-y-2">
-              <p>
-                Wire `ContextSummary` and `useRunContext` to display the normalized narrative for
-                Claude and human review.
-              </p>
-              <p>
-                Provide quick links for anomalies, flagged samples, or coverage alerts surfaced by
-                the AI agent.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-dashed">
+        <aside>
+          <Card className="border-dashed h-full">
             <CardHeader>
               <CardTitle>Chat activity</CardTitle>
               <CardDescription>Claude conversation surface.</CardDescription>
@@ -84,7 +66,6 @@ function RunDetailPage() {
                 Embed `ChatPanel` once endpoints are live. Support streaming responses and history
                 via `useRunChat`.
               </p>
-              <Separator />
               <p className="text-xs text-muted-foreground">
                 Future work: add quick prompts, export transcript, and highlight references back to
                 raw data.
