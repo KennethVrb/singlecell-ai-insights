@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-function AppShellLayout() {
+function MainLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
@@ -86,4 +86,4 @@ function AppShellLayout() {
   )
 }
 
-export { AppShellLayout }
+export { MainLayout }
