@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { requestJSON } from "./client"
 
@@ -19,9 +19,16 @@ type Run = RunSummary & {
   normalized_context: Record<string, unknown> | null
 }
 
-async function listRuns() {
+async function listRuns(refresh?: boolean) {
+  let params = {}
+
+  if (refresh) {
+    params = { refresh: "true" }
+  }
+
   return await requestJSON<RunSummary[]>({
     endpoint: "/runs/",
+    params,
   })
 }
 
@@ -31,10 +38,21 @@ async function getRun(pk: number) {
   })
 }
 
-function useRunsQuery() {
+function useRunsQuery(refresh?: boolean) {
   return useQuery({
     queryKey: ["runs"],
-    queryFn: listRuns,
+    queryFn: () => listRuns(refresh),
+  })
+}
+
+function useSyncRuns() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async () => await listRuns(true),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["runs"], data)
+    },
   })
 }
 
@@ -54,5 +72,5 @@ function useRunQuery(pk: number | null | undefined) {
   })
 }
 
-export { useRunsQuery, useRunQuery }
+export { useRunsQuery, useRunQuery, useSyncRuns }
 export type { RunSummary, Run }

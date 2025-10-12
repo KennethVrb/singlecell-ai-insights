@@ -19,6 +19,7 @@ type RequestInput = {
   body?: unknown
   headers?: HeadersInit
   options?: RequestOptions
+  params?: Record<string, string>
 }
 
 async function requestJSON<T>({
@@ -27,6 +28,7 @@ async function requestJSON<T>({
   body,
   headers,
   options,
+  params,
 }: RequestInput): Promise<T> {
   const config: RequestInit = {
     method,
@@ -38,12 +40,17 @@ async function requestJSON<T>({
     ...options,
   }
 
+  const url = new URL(`${API_BASE_URL}${endpoint}`)
+
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => url.searchParams.append(key, value))
+  }
+
   if (body !== undefined) {
     config.body = JSON.stringify(body)
   }
 
-  const url = `${API_BASE_URL}${endpoint}`
-  const response = await fetch(url, config)
+  const response = await fetch(url.toString(), config)
 
   if (!response.ok) {
     const detail = await safeReadJSON(response)

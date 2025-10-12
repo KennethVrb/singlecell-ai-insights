@@ -1,0 +1,3 @@
+- Extract run status display logic in RunsPage and make a new RunStatus component. Use this component in the RunDetailPage and the RunListPage.
+- Look into the run detail page and see if we can extract the run metadata display logic into a new RunMetadata component. Use this component in the RunDetailPage.
+- Look into normalizing the multiqc data so we can display it as run metrics (sample count, cell countm etc.). We need to start integrating the cli_chatbot/src/tools/normalizer.py into the backend for this. We want to store normalized context to be used by the chatbot but also add relevant values as metrics to a run in our database for us to show.
