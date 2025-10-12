@@ -116,8 +116,6 @@ class RunEndpointTests(APITestCase):
         self.assertEqual(created_run.pipeline, 'Example Workflow')
         self.assertEqual(created_run.output_dir_bucket, 'bucket')
         self.assertEqual(created_run.output_dir_key, 'run-123/')
-        self.assertEqual(response.data[0]['output_dir_bucket'], 'bucket')
-        self.assertEqual(response.data[0]['output_dir_key'], 'run-123/')
 
     def test_refresh_parameter_forces_update(self):
         self.authenticate()
@@ -199,10 +197,9 @@ class RunEndpointTests(APITestCase):
         self.assertEqual(response.data['status'], run.status)
         self.assertEqual(response.data['pipeline'], run.pipeline)
         self.assertEqual(
-            response.data['output_dir_key'],
-            run.output_dir_key,
+            response.data['output_dir_bucket'], run.output_dir_bucket
         )
-        self.assertEqual(response.data['metadata'], run.metadata)
+        self.assertEqual(response.data['output_dir_key'], run.output_dir_key)
 
     def test_run_multiqc_report_view(self):
         self.authenticate()

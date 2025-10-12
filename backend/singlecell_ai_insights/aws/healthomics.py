@@ -35,20 +35,6 @@ def _coerce_datetime(value: Optional[datetime]) -> Optional[datetime]:
     return parsed
 
 
-def _sanitize_metadata(value):
-    if isinstance(value, dict):
-        return {key: _sanitize_metadata(val) for key, val in value.items()}
-    if isinstance(value, list):
-        return [_sanitize_metadata(item) for item in value]
-    if isinstance(value, datetime):
-        return (
-            _coerce_datetime(value).isoformat()
-            if _coerce_datetime(value)
-            else None
-        )
-    return value
-
-
 def _extract_pipeline_name(
     item: Dict[str, object], cache: Dict[str, str]
 ) -> str:
@@ -122,14 +108,13 @@ def _normalize_run(item, workflow_name_cache, fallback=None):
         ),
         'output_dir_bucket': bucket,
         'output_dir_key': key or str(combined.get('outputUri') or ''),
-        'metadata': _sanitize_metadata(combined),
     }
 
     return normalized
 
 
 def list_runs() -> List[Dict[str, object]]:
-    """Return normalized run metadata from AWS HealthOmics."""
+    """Return normalized runs from AWS HealthOmics."""
 
     paginator = settings.AWS_HEALTHOMICS_CLIENT.get_paginator('list_runs')
 

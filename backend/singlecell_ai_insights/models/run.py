@@ -18,9 +18,6 @@ class Run(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True)
     output_dir_bucket = models.CharField(max_length=255, blank=True)
     output_dir_key = models.CharField(max_length=512, blank=True)
-    metadata = models.JSONField(default=dict, blank=True)
-    normalized_context = models.JSONField(null=True, blank=True)
-    indexed_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-created_at']
@@ -37,6 +34,9 @@ class Run(models.Model):
         return f'{base}/pubdir/multiqc/multiqc_report.html'
 
     def get_multiqc_report_url(self):
+        import pdb
+
+        pdb.set_trace()
         if not self.output_dir_bucket:
             return None
         report_key = self.get_multiqc_report_s3_key()

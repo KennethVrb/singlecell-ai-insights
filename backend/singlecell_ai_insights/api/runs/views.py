@@ -47,7 +47,6 @@ class RunViewSet(viewsets.ReadOnlyModelViewSet):
                                 run.get('output_dir_bucket') or ''
                             ),
                             'output_dir_key': run.get('output_dir_key') or '',
-                            'metadata': run.get('metadata') or {},
                         },
                     )
             except healthomics.HealthOmicsClientError as exc:

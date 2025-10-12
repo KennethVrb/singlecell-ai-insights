@@ -16,12 +16,21 @@ type RunSummary = {
 }
 
 type Run = RunSummary & {
-  metadata: Record<string, unknown> | null
-  normalized_context: Record<string, unknown> | null
+  output_dir_bucket: string
+  output_dir_key: string
 }
 
 type RunMultiqcReport = {
   multiqc_report_url: string
+}
+
+type RunChat = {
+  answer: string
+  citations: string[]
+  table_url: string
+  plot_url: string
+  metric_key: string
+  notes: string[]
 }
 
 async function listRuns(refresh?: boolean) {
@@ -46,6 +55,14 @@ async function getRun(pk: number) {
 async function getRunMultiqcReport(pk: number) {
   return await requestJSON<RunMultiqcReport>({
     endpoint: `/runs/${pk}/multiqc-report/`,
+  })
+}
+
+async function runChat(pk: number, question: string) {
+  return await requestJSON<RunChat>({
+    endpoint: `/runs/${pk}/chat/`,
+    method: "POST",
+    body: { question },
   })
 }
 
@@ -89,5 +106,11 @@ function useRunMultiqcReportMutation() {
   })
 }
 
-export { useRunsQuery, useRunQuery, useRunMultiqcReportMutation, useSyncRuns }
-export type { RunSummary, Run, RunMultiqcReport }
+function useRunChatMutation() {
+  return useMutation({
+    mutationFn: async (pk: number, question: string) => await runChat(pk, question),
+  })
+}
+
+export { useRunsQuery, useRunQuery, useRunMultiqcReportMutation, useSyncRuns, useRunChatMutation }
+export type { RunSummary, Run, RunMultiqcReport, RunChat }

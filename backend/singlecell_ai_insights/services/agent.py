@@ -12,10 +12,10 @@ os.environ.setdefault('MPLBACKEND', 'Agg')
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 from langchain.docstore.document import Document
+from langchain_aws import BedrockEmbeddings, ChatBedrock
 
 # In-memory vector store for PoC - to be replaced with OpenSearch later
-from langchain.vectorstores import FAISS
-from langchain_aws import BedrockEmbeddings, ChatBedrock
+from langchain_community.vectorstores import FAISS
 
 # LangChain/LangGraph
 from langgraph.graph import END, START, StateGraph

@@ -15,8 +15,6 @@ class RunSummarySerializer(serializers.ModelSerializer):
             'created_at',
             'started_at',
             'completed_at',
-            'output_dir_bucket',
-            'output_dir_key',
         ]
 
 
@@ -25,6 +23,6 @@ class RunSerializer(serializers.ModelSerializer):
         model = Run
         fields = [
             *RunSummarySerializer.Meta.fields,
-            'metadata',
-            'normalized_context',
+            'output_dir_bucket',
+            'output_dir_key',
         ]
