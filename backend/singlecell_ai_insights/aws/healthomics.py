@@ -88,7 +88,7 @@ def _extract_output_location(item):
     if value.startswith('s3://'):
         full_path = value.split('s3://')[1]
         bucket, key = full_path.split('/', 1)
-        return bucket, f'{key}/'
+        return bucket, f'{key.strip("/")}/'
 
     return '', value
 

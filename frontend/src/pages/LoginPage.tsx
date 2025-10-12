@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom"
 import { AuthLoadingScreen } from "@/components/AuthLoadingScreen"
 import { Button } from "@/components/ui/button"
 import { ApiError } from "@/api/client"
-import { useAuth } from "@/providers/auth-context"
+import { useAuth } from "@/providers/auth/auth-context"
 
 function LoginPage() {
   const navigate = useNavigate()

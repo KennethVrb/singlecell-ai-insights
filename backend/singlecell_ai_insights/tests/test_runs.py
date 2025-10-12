@@ -3,6 +3,7 @@ from datetime import timezone as dt_timezone
 from unittest.mock import MagicMock
 
 from botocore.exceptions import BotoCoreError
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import override_settings
 from django.utils import timezone
@@ -11,24 +12,45 @@ from rest_framework.test import APITestCase
 
 from singlecell_ai_insights.models import Run
 
-MOCK_HEALTHOMICS_CLIENT = MagicMock(name='MockHealthOmicsClient')
+
+class MockHealthOmicsClient:
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.paginator = MagicMock()
+        self.paginator.paginate = MagicMock(return_value=[])
+
+        self.get_paginator = MagicMock(return_value=self.paginator)
+        self.get_paginator.side_effect = None
+
+        self.get_workflow = MagicMock(return_value={'name': 'Mock Workflow'})
+        self.get_workflow.side_effect = None
+
+        self.get_run = MagicMock(return_value={'run': {}})
+        self.get_run.side_effect = None
 
 
-@override_settings(AWS_HEALTHOMICS_CLIENT=MOCK_HEALTHOMICS_CLIENT)
+MOCK_HEALTHOMICS_CLIENT = MockHealthOmicsClient()
+
+
+class MockS3Client:
+    def __init__(self):
+        self.generate_presigned_url = MagicMock(
+            return_value='https://example.com/presigned'
+        )
+
+
+@override_settings(
+    AWS_HEALTHOMICS_CLIENT=MOCK_HEALTHOMICS_CLIENT,
+    AWS_S3_CLIENT=MockS3Client(),
+)
 class RunEndpointTests(APITestCase):
     def setUp(self):
         super().setUp()
-        MOCK_HEALTHOMICS_CLIENT.reset_mock()
-        MOCK_HEALTHOMICS_CLIENT.get_paginator.side_effect = None
-        MOCK_HEALTHOMICS_CLIENT.get_paginator.return_value = MagicMock()
-        MOCK_HEALTHOMICS_CLIENT.get_workflow.reset_mock()
-        MOCK_HEALTHOMICS_CLIENT.get_workflow.side_effect = None
-        MOCK_HEALTHOMICS_CLIENT.get_workflow.return_value = {
-            'name': 'Mock Workflow'
-        }
-        MOCK_HEALTHOMICS_CLIENT.get_run.reset_mock()
-        MOCK_HEALTHOMICS_CLIENT.get_run.side_effect = None
-        MOCK_HEALTHOMICS_CLIENT.get_run.return_value = {'run': {}}
+        settings.AWS_S3_CLIENT.generate_presigned_url.reset_mock()
+        MOCK_HEALTHOMICS_CLIENT.reset()
+        self.mock_paginator = MOCK_HEALTHOMICS_CLIENT.paginator
 
         self.user = get_user_model().objects.create_user(
             username='tester', password='strong-pass'
@@ -71,7 +93,7 @@ class RunEndpointTests(APITestCase):
         MOCK_HEALTHOMICS_CLIENT.get_run.return_value = {
             'run': {
                 'id': 'run-123',
-                'outputUri': 's3://bucket/report.zip',
+                'runOutputUri': 's3://bucket/run-123/',
                 'status': 'COMPLETED',
             }
         }
@@ -93,9 +115,9 @@ class RunEndpointTests(APITestCase):
         self.assertEqual(response.data[0]['pipeline'], 'Example Workflow')
         self.assertEqual(created_run.pipeline, 'Example Workflow')
         self.assertEqual(created_run.output_dir_bucket, 'bucket')
-        self.assertEqual(created_run.output_dir_key, 'report.zip')
+        self.assertEqual(created_run.output_dir_key, 'run-123/')
         self.assertEqual(response.data[0]['output_dir_bucket'], 'bucket')
-        self.assertEqual(response.data[0]['output_dir_key'], 'report.zip')
+        self.assertEqual(response.data[0]['output_dir_key'], 'run-123/')
 
     def test_refresh_parameter_forces_update(self):
         self.authenticate()
@@ -166,7 +188,7 @@ class RunEndpointTests(APITestCase):
             pipeline='wf',
             created_at=timezone.now(),
             output_dir_bucket='bucket',
-            output_dir_key='run-123',
+            output_dir_key='run-123/',
         )
 
         response = self.client.get(f'/api/runs/{run.pk}/')
@@ -181,3 +203,50 @@ class RunEndpointTests(APITestCase):
             run.output_dir_key,
         )
         self.assertEqual(response.data['metadata'], run.metadata)
+
+    def test_run_multiqc_report_view(self):
+        self.authenticate()
+        run = Run.objects.create(
+            run_id='run-123',
+            name='Example Run',
+            status='COMPLETED',
+            pipeline='wf',
+            created_at=timezone.now(),
+            output_dir_bucket='bucket',
+            output_dir_key='run-123/',
+        )
+
+        response = self.client.get(f'/api/runs/{run.pk}/multiqc-report/')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data['multiqc_report_url'],
+            'https://example.com/presigned',
+        )
+        settings.AWS_S3_CLIENT.generate_presigned_url.assert_called_once_with(
+            'get_object',
+            Params={
+                'Bucket': 'bucket',
+                'Key': 'run-123/pubdir/multiqc/multiqc_report.html',
+            },
+            ExpiresIn=int(settings.AWS_S3_PRESIGN_TTL),
+        )
+
+    def test_run_multiqc_report_view_not_available(self):
+        self.authenticate()
+        run = Run.objects.create(
+            run_id='run-404',
+            name='Example Run',
+            status='COMPLETED',
+            pipeline='wf',
+            created_at=timezone.now(),
+            output_dir_bucket='',
+            output_dir_key='',
+        )
+
+        response = self.client.get(f'/api/runs/{run.pk}/multiqc-report/')
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.data['detail'], 'MultiQC report not available.'
+        )

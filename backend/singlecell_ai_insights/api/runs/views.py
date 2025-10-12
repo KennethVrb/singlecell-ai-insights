@@ -1,10 +1,10 @@
 import logging
 
 from django.utils import timezone
-from rest_framework import status
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from singlecell_ai_insights.aws import healthomics
 from singlecell_ai_insights.models.run import Run
@@ -14,10 +14,17 @@ from .serializers import RunSerializer, RunSummarySerializer
 logger = logging.getLogger(__name__)
 
 
-class RunListView(APIView):
+class RunViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Run.objects.all()
     permission_classes = [IsAuthenticated]
+    serializer_class = RunSerializer
 
-    def get(self, request):
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return RunSummarySerializer
+        return super().get_serializer_class()
+
+    def list(self, request, *args, **kwargs):
         should_refresh = (
             request.query_params.get('refresh', '').lower() in {'1', 'true'}
             or not Run.objects.exists()
@@ -50,22 +57,18 @@ class RunListView(APIView):
                     status=status.HTTP_502_BAD_GATEWAY,
                 )
 
-        queryset = Run.objects.all()
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
-        data = RunSummarySerializer(queryset, many=True).data
-        return Response(data)
-
-
-class RunDetailView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, pk):
-        try:
-            run = Run.objects.get(pk=pk)
-        except Run.DoesNotExist:
+    @action(detail=True, methods=['get'], url_path='multiqc-report')
+    def multiqc_report(self, request, pk=None):
+        run = self.get_object()
+        url = run.get_multiqc_report_url()
+        if not url:
             return Response(
-                {'detail': 'Run not found.'}, status=status.HTTP_404_NOT_FOUND
+                {'detail': 'MultiQC report not available.'},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
-        data = RunSerializer(run).data
-        return Response(data)
+        return Response({'multiqc_report_url': url})

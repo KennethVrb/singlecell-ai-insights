@@ -1,6 +1,3 @@
-from .views import RunDetailView, RunListView
+from .views import RunViewSet
 
-__all__ = [
-    'RunDetailView',
-    'RunListView',
-]
+__all__ = ['RunViewSet']

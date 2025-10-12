@@ -2,7 +2,7 @@ import { useCallback } from "react"
 import { Link, Outlet, useNavigate } from "react-router-dom"
 
 import { ApiError } from "@/api/client"
-import { useAuth } from "@/providers/auth-context"
+import { useAuth } from "@/providers/auth/auth-context"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {

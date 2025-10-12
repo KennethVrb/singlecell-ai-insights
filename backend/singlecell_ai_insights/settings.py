@@ -197,5 +197,8 @@ CORS_ALLOWED_ORIGINS = (
 CORS_ALLOW_CREDENTIALS = True
 
 
-# AWS clients
-AWS_HEALTHOMICS_CLIENT = boto3.client('omics')
+# AWS clients & configuration
+session = boto3.Session(region_name=os.environ['AWS_REGION'])
+AWS_HEALTHOMICS_CLIENT = session.client('omics')
+AWS_S3_CLIENT = session.client('s3')
+AWS_S3_PRESIGN_TTL = int(os.environ['AWS_S3_PRESIGN_TTL'])

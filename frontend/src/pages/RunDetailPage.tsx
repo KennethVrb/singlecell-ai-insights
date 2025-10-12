@@ -1,20 +1,23 @@
 import { Link, useParams } from "react-router-dom"
 
-import { useRunQuery } from "@/api/runs"
 import { RunStatusBadge } from "@/components/RunStatusBadge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
 import { formatDateTime } from "@/lib/datetime"
 import { cn } from "@/lib/utils"
+import { useRunDetail } from "@/hooks/useRunDetail"
 
 function RunDetailPage() {
   const { runId } = useParams<{ runId: string }>()
-  const numericRunId = runId ? Number.parseInt(runId, 10) : NaN
-  const { data: run, isLoading, isError, error, refetch, isFetching } = useRunQuery(numericRunId)
-  const isChatReady = Boolean(
-    run?.status && ["COMPLETED", "SUCCEEDED"].includes(run.status.toUpperCase()),
-  )
+  const {
+    run,
+    isLoading,
+    isChatReady,
+    isMultiqcAvailable,
+    isMultiqcPending,
+    handleDownloadMultiqc,
+  } = useRunDetail(runId)
 
   return (
     <div className="space-y-8">
@@ -27,32 +30,29 @@ function RunDetailPage() {
               <span className="font-medium text-foreground"> {run?.name ?? "unknown"}</span>.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:gap-2">
             <Button variant="outline" asChild>
               <Link to="/runs">Back to runs</Link>
             </Button>
-            <Button disabled={!run?.output_dir_key} variant="brand">
-              {run?.output_dir_key ? "Download MultiQC" : "Download unavailable"}
+            <Button
+              disabled={!isMultiqcAvailable || isMultiqcPending}
+              variant="brand"
+              onClick={handleDownloadMultiqc}
+            >
+              {isMultiqcPending ? (
+                <span className="flex items-center gap-2">
+                  <Spinner className="h-4 w-4" />
+                  Fetching report…
+                </span>
+              ) : isMultiqcAvailable ? (
+                "Download MultiQC"
+              ) : (
+                "Download unavailable"
+              )}
             </Button>
           </div>
         </div>
       </header>
-
-      {isError ? (
-        <Card className="border border-destructive/40 bg-destructive/5">
-          <CardContent className="flex items-center justify-between gap-2 py-6 text-destructive">
-            <p>{error instanceof Error ? error.message : "Unable to load run."}</p>
-            <Button
-              variant="outline"
-              onClick={() => refetch({ cancelRefetch: false })}
-              disabled={isFetching}
-            >
-              {isFetching ? <Spinner className="mr-2" /> : null}
-              Retry
-            </Button>
-          </CardContent>
-        </Card>
-      ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.35fr)_minmax(0,1fr)]">
         <section className="space-y-6">
@@ -140,12 +140,7 @@ function RunDetailPage() {
                   : "Chat becomes available after the run successfully completes."}
               </CardDescription>
             </CardHeader>
-            <CardContent
-              className={cn(
-                "space-y-2 text-sm",
-                isChatReady ? "text-muted-foreground" : "text-muted-foreground",
-              )}
-            >
+            <CardContent className={cn("space-y-2 text-sm", "text-muted-foreground")}>
               {isLoading ? (
                 <div className="flex items-center gap-2 text-foreground">
                   <Spinner />

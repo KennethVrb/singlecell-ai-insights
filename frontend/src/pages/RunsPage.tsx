@@ -1,16 +1,12 @@
-import { useRunsQuery, useSyncRuns } from "@/api/runs"
 import { RunsTable } from "@/components/RunsTable"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
-import { useAuth } from "@/providers/auth-context"
+import { useRunsPage } from "@/hooks/useRunsPage"
+import { useAuth } from "@/providers/auth/auth-context"
 
 function RunsPage() {
   const { user } = useAuth()
-
-  const { data: runs, isLoading, isError, error } = useRunsQuery()
-  const { mutate: syncRuns, isPending: isSyncing } = useSyncRuns()
-
-  const runItems = runs ?? []
+  const { runItems, isLoading, isError, error, isSyncing, handleSyncRuns } = useRunsPage()
 
   return (
     <div className="space-y-8">
@@ -24,14 +20,7 @@ function RunsPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground md:justify-end">
-            <Button
-              variant="brand"
-              size="sm"
-              onClick={() => {
-                syncRuns()
-              }}
-              disabled={isSyncing}
-            >
+            <Button variant="brand" size="sm" onClick={handleSyncRuns} disabled={isSyncing}>
               {isSyncing ? <Spinner className="mr-2" /> : null}
               Sync with HealthOmics
             </Button>

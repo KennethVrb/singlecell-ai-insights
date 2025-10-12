@@ -20,6 +20,10 @@ type Run = RunSummary & {
   normalized_context: Record<string, unknown> | null
 }
 
+type RunMultiqcReport = {
+  multiqc_report_url: string
+}
+
 async function listRuns(refresh?: boolean) {
   let params = {}
 
@@ -36,6 +40,12 @@ async function listRuns(refresh?: boolean) {
 async function getRun(pk: number) {
   return await requestJSON<Run>({
     endpoint: `/runs/${pk}/`,
+  })
+}
+
+async function getRunMultiqcReport(pk: number) {
+  return await requestJSON<RunMultiqcReport>({
+    endpoint: `/runs/${pk}/multiqc-report/`,
   })
 }
 
@@ -73,5 +83,11 @@ function useRunQuery(pk: number | null | undefined) {
   })
 }
 
-export { useRunsQuery, useRunQuery, useSyncRuns }
-export type { RunSummary, Run }
+function useRunMultiqcReportMutation() {
+  return useMutation({
+    mutationFn: async (pk: number) => await getRunMultiqcReport(pk),
+  })
+}
+
+export { useRunsQuery, useRunQuery, useRunMultiqcReportMutation, useSyncRuns }
+export type { RunSummary, Run, RunMultiqcReport }

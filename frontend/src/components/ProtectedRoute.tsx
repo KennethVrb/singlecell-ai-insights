@@ -2,7 +2,7 @@ import { Navigate, useLocation } from "react-router-dom"
 
 import { AuthLoadingScreen } from "@/components/AuthLoadingScreen"
 import { MainLayout } from "@/components/MainLayout"
-import { useAuth } from "@/providers/auth-context"
+import { useAuth } from "@/providers/auth/auth-context"
 
 function ProtectedRoute() {
   const { isAuthenticated, isBootstrapping } = useAuth()
