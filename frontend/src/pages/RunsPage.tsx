@@ -1,8 +1,7 @@
-import type { ReactNode } from "react"
 import { Link } from "react-router-dom"
-import { CheckCircle2, Clock3, TriangleAlert } from "lucide-react"
 
 import { useRunsQuery, useSyncRuns } from "@/api/runs"
+import { RunStatusBadge } from "@/components/RunStatusBadge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
@@ -14,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { formatDateTime } from "@/lib/datetime"
 import { useAuth } from "@/providers/auth-context"
 
 function RunsPage() {
@@ -22,73 +22,7 @@ function RunsPage() {
   const { data: runs, isLoading, isError, error } = useRunsQuery()
   const { mutate: syncRuns, isPending: isSyncing } = useSyncRuns()
 
-  const statusConfig: Record<string, { className: string; icon: ReactNode }> = {
-    COMPLETED: {
-      className: "status-badge status-badge-success",
-      icon: <CheckCircle2 className="size-3.5" aria-hidden />,
-    },
-    SUCCEEDED: {
-      className: "status-badge status-badge-success",
-      icon: <CheckCircle2 className="size-3.5" aria-hidden />,
-    },
-    RUNNING: {
-      className: "status-badge status-badge-warning",
-      icon: <Clock3 className="size-3.5" aria-hidden />,
-    },
-    IN_PROGRESS: {
-      className: "status-badge status-badge-warning",
-      icon: <Clock3 className="size-3.5" aria-hidden />,
-    },
-    FAILED: {
-      className: "status-badge status-badge-error",
-      icon: <TriangleAlert className="size-3.5" aria-hidden />,
-    },
-    ERROR: {
-      className: "status-badge status-badge-error",
-      icon: <TriangleAlert className="size-3.5" aria-hidden />,
-    },
-  }
-
   const runItems = runs ?? []
-
-  const formatStatus = (status: string) => {
-    if (!status) {
-      return "Unknown"
-    }
-
-    return status
-      .replace(/_/g, " ")
-      .toLowerCase()
-      .replace(/(^|\s)\w/g, (match) => match.toUpperCase())
-  }
-
-  const renderStatusBadge = (status: string) => {
-    const key = status?.toUpperCase() ?? ""
-    const config = statusConfig[key]
-
-    return (
-      <span className={config?.className}>
-        {config?.icon}
-        {formatStatus(status)}
-      </span>
-    )
-  }
-
-  const formatDateTime = (value?: string | null) => {
-    if (!value) {
-      return "—"
-    }
-
-    const parsed = new Date(value)
-    if (Number.isNaN(parsed.getTime())) {
-      return "—"
-    }
-
-    return parsed.toLocaleString(undefined, {
-      dateStyle: "medium",
-      timeStyle: "short",
-    })
-  }
 
   return (
     <div className="space-y-8">
@@ -161,7 +95,9 @@ function RunsPage() {
                   <TableCell className="px-4 py-4 text-muted-foreground">
                     {run.pipeline || "—"}
                   </TableCell>
-                  <TableCell className="px-4 py-4">{renderStatusBadge(run.status)}</TableCell>
+                  <TableCell className="px-4 py-4">
+                    <RunStatusBadge status={run.status} />
+                  </TableCell>
                   <TableCell className="px-4 py-4 text-muted-foreground">
                     {formatDateTime(run.created_at)}
                   </TableCell>
@@ -204,7 +140,7 @@ function RunsPage() {
               <CardContent className="space-y-3 text-sm text-muted-foreground">
                 <div className="flex items-center justify-between">
                   <span>Status</span>
-                  {renderStatusBadge(run.status)}
+                  <RunStatusBadge status={run.status} />
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Created</span>

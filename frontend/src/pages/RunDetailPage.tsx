@@ -1,9 +1,11 @@
 import { Link, useParams } from "react-router-dom"
 
 import { useRunQuery } from "@/api/runs"
+import { RunStatusBadge } from "@/components/RunStatusBadge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
+import { formatDateTime } from "@/lib/datetime"
 
 function RunDetailPage() {
   const { runId } = useParams<{ runId: string }>()
@@ -69,17 +71,17 @@ function RunDetailPage() {
                   <p>
                     <span className="font-medium text-foreground">Pipeline:</span> {run.pipeline}
                   </p>
-                  <p>
-                    <span className="font-medium text-foreground">Status:</span>{" "}
-                    {run.status || "Unknown"}
+                  <p className="flex items-center gap-2">
+                    <span className="font-medium text-foreground">Status:</span>
+                    <RunStatusBadge status={run.status} />
                   </p>
                   <p>
                     <span className="font-medium text-foreground">Created:</span>{" "}
-                    {run.created_at ? new Date(run.created_at).toLocaleString() : "—"}
+                    {formatDateTime(run.created_at)}
                   </p>
                   <p>
                     <span className="font-medium text-foreground">Completed:</span>{" "}
-                    {run.completed_at ? new Date(run.completed_at).toLocaleString() : "—"}
+                    {formatDateTime(run.completed_at)}
                   </p>
                 </div>
               ) : (
