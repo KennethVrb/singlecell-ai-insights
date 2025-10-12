@@ -78,43 +78,101 @@ def _extract_pipeline_name(
     return str(fallback)
 
 
+def _extract_output_location(item):
+    uri = item.get('runOutputUri')
+    if not uri:
+        return '', ''
+
+    value = str(uri)
+
+    if value.startswith('s3://'):
+        full_path = value.split('s3://')[1]
+        bucket, key = full_path.split('/', 1)
+        return bucket, f'{key}/'
+
+    return '', value
+
+
+def _normalize_run(item, workflow_name_cache, fallback=None):
+    combined = {}
+    if isinstance(fallback, dict):
+        combined.update(fallback)
+    if isinstance(item, dict):
+        combined.update(item)
+
+    bucket, key = _extract_output_location(combined)
+
+    run_id = combined.get('id') or combined.get('runId')
+    name = combined.get('name') or ''
+    status = combined.get('status') or ''
+
+    normalized = {
+        'run_id': run_id,
+        'name': str(name),
+        'status': str(status),
+        'pipeline': _extract_pipeline_name(combined, workflow_name_cache),
+        'created_at': _coerce_datetime(
+            combined.get('creationTime') or combined.get('createdTime')
+        ),
+        'started_at': _coerce_datetime(
+            combined.get('startTime') or combined.get('startedTime')
+        ),
+        'completed_at': _coerce_datetime(
+            combined.get('stopTime') or combined.get('completedTime')
+        ),
+        'output_dir_bucket': bucket,
+        'output_dir_key': key or str(combined.get('outputUri') or ''),
+        'metadata': _sanitize_metadata(combined),
+    }
+
+    return normalized
+
+
 def list_runs() -> List[Dict[str, object]]:
     """Return normalized run metadata from AWS HealthOmics."""
 
     paginator = settings.AWS_HEALTHOMICS_CLIENT.get_paginator('list_runs')
 
-    runs: List[Dict[str, object]] = []
+    collected = {}
     workflow_name_cache: Dict[str, str] = {}
     try:
         for page in paginator.paginate():
             page_items = page.get('items') or page.get('runs') or []
             for item in page_items:
-                runs.append(
-                    {
-                        'run_id': item.get('id') or item.get('runId'),
-                        'name': item.get('name', ''),
-                        'status': item.get('status', ''),
-                        'pipeline': _extract_pipeline_name(
-                            item, workflow_name_cache
-                        ),
-                        'created_at': _coerce_datetime(
-                            item.get('creationTime') or item.get('createdTime')
-                        ),
-                        'started_at': _coerce_datetime(
-                            item.get('startTime') or item.get('startTime')
-                        ),
-                        'completed_at': _coerce_datetime(
-                            item.get('stopTime') or item.get('stopTime')
-                        ),
-                        's3_report_key': item.get('output')
-                        or item.get('outputUri')
-                        or '',
-                        'metadata': _sanitize_metadata(item),
-                    }
-                )
+                run_id = item.get('id') or item.get('runId')
+                if not run_id:
+                    continue
+                collected[str(run_id)] = item
     except (BotoCoreError, ClientError) as exc:
         raise HealthOmicsClientError(
             'Unable to list HealthOmics runs'
         ) from exc
 
-    return [run for run in runs if run['run_id']]
+    runs: List[Dict[str, object]] = []
+
+    for run_id, base_item in collected.items():
+        detailed = None
+        try:
+            detailed_response = settings.AWS_HEALTHOMICS_CLIENT.get_run(
+                id=run_id
+            )
+            if (
+                isinstance(detailed_response, dict)
+                and 'run' in detailed_response
+            ):
+                detailed = detailed_response.get('run')
+            else:
+                detailed = detailed_response
+        except (BotoCoreError, ClientError) as exc:
+            logger.warning(
+                'Unable to fetch run details for %s: %s', run_id, exc
+            )
+            detailed = base_item
+
+        normalized = _normalize_run(
+            detailed, workflow_name_cache, fallback=base_item
+        )
+        if normalized.get('run_id'):
+            runs.append(normalized)
+
+    return runs

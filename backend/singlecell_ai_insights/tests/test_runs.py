@@ -26,6 +26,10 @@ class RunEndpointTests(APITestCase):
         MOCK_HEALTHOMICS_CLIENT.get_workflow.return_value = {
             'name': 'Mock Workflow'
         }
+        MOCK_HEALTHOMICS_CLIENT.get_run.reset_mock()
+        MOCK_HEALTHOMICS_CLIENT.get_run.side_effect = None
+        MOCK_HEALTHOMICS_CLIENT.get_run.return_value = {'run': {}}
+
         self.user = get_user_model().objects.create_user(
             username='tester', password='strong-pass'
         )
@@ -64,6 +68,13 @@ class RunEndpointTests(APITestCase):
         MOCK_HEALTHOMICS_CLIENT.get_workflow.return_value = {
             'name': 'Example Workflow'
         }
+        MOCK_HEALTHOMICS_CLIENT.get_run.return_value = {
+            'run': {
+                'id': 'run-123',
+                'outputUri': 's3://bucket/report.zip',
+                'status': 'COMPLETED',
+            }
+        }
 
         response = self.client.get('/api/runs/')
 
@@ -75,11 +86,16 @@ class RunEndpointTests(APITestCase):
             id='2174942',
             type='READY2RUN',
         )
+        MOCK_HEALTHOMICS_CLIENT.get_run.assert_called_once_with(id='run-123')
         self.assertEqual(len(response.data), 1)
         created_run = Run.objects.get(run_id='run-123')
         self.assertEqual(response.data[0]['pk'], created_run.pk)
         self.assertEqual(response.data[0]['pipeline'], 'Example Workflow')
         self.assertEqual(created_run.pipeline, 'Example Workflow')
+        self.assertEqual(created_run.output_dir_bucket, 'bucket')
+        self.assertEqual(created_run.output_dir_key, 'report.zip')
+        self.assertEqual(response.data[0]['output_dir_bucket'], 'bucket')
+        self.assertEqual(response.data[0]['output_dir_key'], 'report.zip')
 
     def test_refresh_parameter_forces_update(self):
         self.authenticate()
@@ -149,6 +165,8 @@ class RunEndpointTests(APITestCase):
             status='COMPLETED',
             pipeline='wf',
             created_at=timezone.now(),
+            output_dir_bucket='bucket',
+            output_dir_key='run-123',
         )
 
         response = self.client.get(f'/api/runs/{run.pk}/')
@@ -158,5 +176,8 @@ class RunEndpointTests(APITestCase):
         self.assertEqual(response.data['name'], run.name)
         self.assertEqual(response.data['status'], run.status)
         self.assertEqual(response.data['pipeline'], run.pipeline)
-        self.assertEqual(response.data['s3_report_key'], run.s3_report_key)
+        self.assertEqual(
+            response.data['output_dir_key'],
+            run.output_dir_key,
+        )
         self.assertEqual(response.data['metadata'], run.metadata)

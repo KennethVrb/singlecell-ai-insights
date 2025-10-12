@@ -11,7 +11,8 @@ type RunSummary = {
   created_at: string
   started_at: string | null
   completed_at: string | null
-  s3_report_key: string
+  output_dir_bucket: string
+  output_dir_key: string
 }
 
 type Run = RunSummary & {

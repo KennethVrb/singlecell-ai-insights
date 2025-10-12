@@ -6,11 +6,15 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
 import { formatDateTime } from "@/lib/datetime"
+import { cn } from "@/lib/utils"
 
 function RunDetailPage() {
   const { runId } = useParams<{ runId: string }>()
   const numericRunId = runId ? Number.parseInt(runId, 10) : NaN
   const { data: run, isLoading, isError, error, refetch, isFetching } = useRunQuery(numericRunId)
+  const isChatReady = Boolean(
+    run?.status && ["COMPLETED", "SUCCEEDED"].includes(run.status.toUpperCase()),
+  )
 
   return (
     <div className="space-y-8">
@@ -27,8 +31,8 @@ function RunDetailPage() {
             <Button variant="outline" asChild>
               <Link to="/runs">Back to runs</Link>
             </Button>
-            <Button disabled={!run?.s3_report_key} variant="brand">
-              {run?.s3_report_key ? "Download MultiQC" : "Download unavailable"}
+            <Button disabled={!run?.output_dir_key} variant="brand">
+              {run?.output_dir_key ? "Download MultiQC" : "Download unavailable"}
             </Button>
           </div>
         </div>
@@ -120,20 +124,45 @@ function RunDetailPage() {
         </section>
 
         <aside>
-          <Card className="border h-full">
+          <Card
+            aria-disabled={!isChatReady}
+            className={cn(
+              "border h-full transition-opacity transition-colors",
+              !isChatReady &&
+                "pointer-events-none border-muted-foreground/60 bg-muted opacity-60 text-muted-foreground",
+            )}
+          >
             <CardHeader>
               <CardTitle>Chat activity</CardTitle>
-              <CardDescription>Claude conversation surface.</CardDescription>
+              <CardDescription className={cn(!isChatReady ? "text-muted-foreground" : undefined)}>
+                {isChatReady
+                  ? "Chat with Claude about this run once endpoints are connected."
+                  : "Chat becomes available after the run successfully completes."}
+              </CardDescription>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground space-y-2">
-              <p>
-                Embed `ChatPanel` once endpoints are live. Support streaming responses and history
-                via `useRunChat`.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Future work: add quick prompts, export transcript, and highlight references back to
-                raw data.
-              </p>
+            <CardContent
+              className={cn(
+                "space-y-2 text-sm",
+                isChatReady ? "text-muted-foreground" : "text-muted-foreground",
+              )}
+            >
+              {isLoading ? (
+                <div className="flex items-center gap-2 text-foreground">
+                  <Spinner />
+                  <span>Preparing chat surface…</span>
+                </div>
+              ) : isChatReady ? (
+                <>
+                  <p>
+                    Embed `ChatPanel` once endpoints are live. Support streaming responses and
+                    history via `useRunChat`.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Future work: add quick prompts, export transcript, and highlight references back
+                    to raw data.
+                  </p>
+                </>
+              ) : null}
             </CardContent>
           </Card>
         </aside>

@@ -15,7 +15,8 @@ class RunSummarySerializer(serializers.ModelSerializer):
             'created_at',
             'started_at',
             'completed_at',
-            's3_report_key',
+            'output_dir_bucket',
+            'output_dir_key',
         ]
 
 

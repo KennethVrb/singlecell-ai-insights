@@ -56,7 +56,7 @@ function LoginPage() {
           </p>
         </header>
 
-        <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2 text-left">
             <label className="block text-sm font-medium text-foreground" htmlFor="username">
               Username

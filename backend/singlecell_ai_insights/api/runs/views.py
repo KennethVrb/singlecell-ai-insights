@@ -36,7 +36,10 @@ class RunListView(APIView):
                             or timezone.now(),
                             'started_at': run.get('started_at'),
                             'completed_at': run.get('completed_at'),
-                            's3_report_key': run.get('s3_report_key') or '',
+                            'output_dir_bucket': (
+                                run.get('output_dir_bucket') or ''
+                            ),
+                            'output_dir_key': run.get('output_dir_key') or '',
                             'metadata': run.get('metadata') or {},
                         },
                     )
