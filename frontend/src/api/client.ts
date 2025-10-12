@@ -1,4 +1,5 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api"
+const UNAUTHORIZED_EVENT = "auth:unauthorized"
 
 class ApiError extends Error {
   status: number
@@ -53,6 +54,13 @@ async function requestJSON<T>({
   const response = await fetch(url.toString(), config)
 
   if (!response.ok) {
+    if (response.status === 401 && typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent(UNAUTHORIZED_EVENT, {
+          detail: { status: response.status, endpoint: url.pathname },
+        }),
+      )
+    }
     const detail = await safeReadJSON(response)
     const message = getErrorMessage(detail, response.statusText)
     throw new ApiError(response.status, message, detail)
@@ -84,4 +92,4 @@ async function safeReadJSON(response: Response): Promise<unknown> {
   }
 }
 
-export { requestJSON, ApiError }
+export { requestJSON, ApiError, UNAUTHORIZED_EVENT }

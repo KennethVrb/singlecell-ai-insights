@@ -1,6 +1,6 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react"
 
-import { ApiError } from "@/api/client"
+import { ApiError, UNAUTHORIZED_EVENT } from "@/api/client"
 import {
   logout as logoutRequest,
   login as loginRequest,
@@ -85,6 +85,23 @@ function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       isMounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return
+    }
+
+    const handleUnauthorized = () => {
+      setUser(null)
+      setIsBootstrapping(false)
+    }
+
+    window.addEventListener(UNAUTHORIZED_EVENT, handleUnauthorized)
+
+    return () => {
+      window.removeEventListener(UNAUTHORIZED_EVENT, handleUnauthorized)
     }
   }, [])
 
