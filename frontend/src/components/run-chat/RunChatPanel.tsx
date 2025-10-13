@@ -77,7 +77,7 @@ function RunChatPanel({
               <Button
                 variant="destructive"
                 onClick={() => setShowDeleteDialog(true)}
-                disabled={isDeletingHistory}
+                disabled={isDeletingHistory || isSubmitting}
               >
                 {isDeletingHistory ? (
                   <span className="flex items-center gap-2">
