@@ -312,13 +312,9 @@ def rag(state):
 def make_table(state):
     rows = state.get('tabular')
     if not rows:
-        # fallback: try to assemble a simple sample/metric table for
-        # chosen metric
-        metric_key = state.get(
-            'metric_key'
-        ) or _infer_metric_key_from_question(
-            state['question'], state['samples']
-        )
+        # Only create fallback table if we explicitly have a metric_key
+        # (from lookup_metric node), not for general RAG questions
+        metric_key = state.get('metric_key')
         if metric_key:
             tmp = []
             for s, m in state['samples'].items():
@@ -345,9 +341,9 @@ def make_table(state):
 
 
 def plot_metric(state):
-    metric_key = state.get('metric_key') or _infer_metric_key_from_question(
-        state['question'], state['samples']
-    )
+    # Only create plot if we have an explicit metric_key
+    # (from lookup_metric node), not for general questions
+    metric_key = state.get('metric_key')
     if not metric_key:
         state['plot_url'] = None
         return state
@@ -424,6 +420,10 @@ def synthesize(state):
 
     Instructions:
     - Answer concisely and concretely.
+    - If the user question has nothing to with the run, 
+      act like any normal assistant. Just answer based on your knowledge.
+    - Dont mention anything about system given context. 
+      The users dont care what context your were given.
     - When referencing modules, cite inline like 
         [fastqc], [umi_tools], [picard] if relevant.
     - If recommending actions, be specific
