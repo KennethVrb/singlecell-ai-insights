@@ -79,6 +79,13 @@ async function runChat(pk: number, question: string) {
   })
 }
 
+async function deleteConversationHistory(pk: number) {
+  return await requestJSON<void>({
+    endpoint: `/runs/${pk}/chat/`,
+    method: "DELETE",
+  })
+}
+
 function useRunsQuery(refresh?: boolean) {
   return useQuery({
     queryKey: ["runs"],
@@ -142,6 +149,17 @@ function useConversationHistoryQuery(pk: number | null | undefined, enabled: boo
   })
 }
 
+function useDeleteConversationHistoryMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (pk: number) => await deleteConversationHistory(pk),
+    onSuccess: (_, pk) => {
+      queryClient.setQueryData(["conversation", pk], { messages: [] })
+    },
+  })
+}
+
 export {
   useRunsQuery,
   useRunQuery,
@@ -149,5 +167,6 @@ export {
   useSyncRuns,
   useRunChatMutation,
   useConversationHistoryQuery,
+  useDeleteConversationHistoryMutation,
 }
 export type { RunSummary, Run, RunMultiqcReport, ChatMessage }

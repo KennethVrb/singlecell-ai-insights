@@ -387,3 +387,102 @@ class ConversationHistoryTests(APITestCase):
         response = self.client.get(f'/api/runs/{run.pk}/chat/')
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class ConversationDeletionTests(APITestCase):
+    def setUp(self):
+        super().setUp()
+        self.user = get_user_model().objects.create_user(
+            username='delete-user',
+            password='strong-pass',
+        )
+        self.client.force_authenticate(self.user)
+
+    def create_run(self):
+        return Run.objects.create(
+            run_id='run-789',
+            name='Delete Test Run',
+        )
+
+    def test_delete_removes_conversation_and_messages(self):
+        run = self.create_run()
+        conversation = Conversation.objects.create(run=run)
+
+        Message.objects.create(
+            conversation=conversation,
+            role=Message.ROLE_USER,
+            content='Question 1',
+        )
+        Message.objects.create(
+            conversation=conversation,
+            role=Message.ROLE_ASSISTANT,
+            content='Answer 1',
+        )
+
+        self.assertEqual(Conversation.objects.filter(run=run).count(), 1)
+        self.assertEqual(
+            Message.objects.filter(conversation=conversation).count(), 2
+        )
+
+        response = self.client.delete(f'/api/runs/{run.pk}/chat/')
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Conversation.objects.filter(run=run).count(), 0)
+        self.assertEqual(Message.objects.count(), 0)
+
+    def test_delete_with_no_conversation_succeeds(self):
+        run = self.create_run()
+
+        self.assertEqual(Conversation.objects.filter(run=run).count(), 0)
+
+        response = self.client.delete(f'/api/runs/{run.pk}/chat/')
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_delete_requires_authentication(self):
+        run = self.create_run()
+        self.client.force_authenticate(None)
+
+        response = self.client.delete(f'/api/runs/{run.pk}/chat/')
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_delete_with_invalid_run_returns_404(self):
+        response = self.client.delete('/api/runs/99999/chat/')
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_allows_fresh_start(self):
+        run = self.create_run()
+        conversation = Conversation.objects.create(run=run)
+
+        Message.objects.create(
+            conversation=conversation,
+            role=Message.ROLE_USER,
+            content='Old question',
+        )
+
+        self.client.delete(f'/api/runs/{run.pk}/chat/')
+
+        with patch(
+            'singlecell_ai_insights.services.agent.chat',
+            return_value={
+                'answer': 'Fresh response',
+                'citations': [],
+                'notes': [],
+            },
+        ) as mock_chat:
+            self.client.post(
+                f'/api/runs/{run.pk}/chat/',
+                {'question': 'New question'},
+                format='json',
+            )
+
+        call_kwargs = mock_chat.call_args[1]
+        history = call_kwargs['conversation_history']
+
+        self.assertEqual(len(history), 1)
+        self.assertEqual(history[0]['content'], 'New question')
+
+        new_conversation = Conversation.objects.get(run=run)
+        self.assertNotEqual(new_conversation.id, conversation.id)

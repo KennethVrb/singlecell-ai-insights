@@ -34,6 +34,8 @@ type UseRunChatPanelResult = {
   handleSubmit: (event: FormEvent<HTMLFormElement>) => void
   isSubmitting: boolean
   composerDisabled: boolean
+  handleDeleteHistory: () => void
+  isDeletingHistory: boolean
 }
 
 export type { ChatMessage, TablePreviewData, TablePreviewStatus, UseRunChatPanelResult }

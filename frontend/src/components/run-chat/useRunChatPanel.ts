@@ -3,7 +3,11 @@ import type { FormEvent } from "react"
 
 import { ApiError } from "@/api/client"
 import type { ChatMessage as ApiChatMessage } from "@/api/runs"
-import { useConversationHistoryQuery, useRunChatMutation } from "@/api/runs"
+import {
+  useConversationHistoryQuery,
+  useDeleteConversationHistoryMutation,
+  useRunChatMutation,
+} from "@/api/runs"
 import { GlobalErrorDialogContext } from "@/providers/global-error/global-error-dialog-context"
 
 import type { ChatMessage, TablePreviewData, UseRunChatPanelResult } from "./types"
@@ -19,6 +23,7 @@ function useRunChatPanel({ runId, enabled }: UseRunChatPanelOptions): UseRunChat
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [textareaValue, setTextareaValue] = useState("")
   const chatMutation = useRunChatMutation()
+  const deleteMutation = useDeleteConversationHistoryMutation()
   const globalErrorDialog = useContext(GlobalErrorDialogContext)
 
   // Load conversation history on mount
@@ -216,6 +221,35 @@ function useRunChatPanel({ runId, enabled }: UseRunChatPanelOptions): UseRunChat
     ],
   )
 
+  const handleDeleteHistory = useCallback(() => {
+    if (!Number.isFinite(runId)) {
+      return
+    }
+
+    const numericRunId = Number(runId)
+
+    deleteMutation.mutate(numericRunId, {
+      onSuccess: () => {
+        setMessages([])
+      },
+      onError: (error) => {
+        if (globalErrorDialog) {
+          const status = error instanceof ApiError ? error.status : 0
+          const detail = error instanceof ApiError ? error.data : null
+          const errorMessage =
+            error instanceof Error ? error.message : "Unable to delete conversation history."
+
+          globalErrorDialog.showError({
+            status,
+            endpoint: `/runs/${numericRunId}/chat/`,
+            message: errorMessage,
+            detail,
+          })
+        }
+      },
+    })
+  }, [runId, deleteMutation, globalErrorDialog])
+
   return {
     messages,
     textareaValue,
@@ -223,6 +257,8 @@ function useRunChatPanel({ runId, enabled }: UseRunChatPanelOptions): UseRunChat
     handleSubmit,
     isSubmitting: chatMutation.isPending,
     composerDisabled,
+    handleDeleteHistory,
+    isDeletingHistory: deleteMutation.isPending,
   }
 }
 

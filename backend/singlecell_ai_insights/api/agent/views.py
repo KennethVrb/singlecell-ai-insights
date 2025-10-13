@@ -93,3 +93,16 @@ class RunAgentChatView(APIView):
         # Return the saved message instead of raw result
         serializer = MessageSerializer(assistant_message)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk):
+        """Delete conversation history for a run."""
+        run = get_object_or_404(Run, pk=pk)
+        deleted_count, _ = Conversation.objects.filter(run=run).delete()
+
+        logger.info(
+            'Deleted %d conversation(s) for run %s',
+            deleted_count,
+            run.pk or run.run_id,
+        )
+
+        return Response(status=status.HTTP_204_NO_CONTENT)

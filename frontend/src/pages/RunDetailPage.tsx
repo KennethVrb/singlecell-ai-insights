@@ -125,7 +125,6 @@ function RunDetailPage() {
                 : undefined
             }
             runName={run?.name}
-            runStatus={run?.status}
           />
         </aside>
       </div>
