@@ -24,13 +24,20 @@ type RunMultiqcReport = {
   multiqc_report_url: string
 }
 
-type RunChat = {
-  answer: string
+type ChatMessage = {
+  id: number
+  role: "user" | "assistant"
+  content: string
   citations: string[]
+  notes: string[]
   table_url: string | null
   plot_url: string | null
   metric_key: string | null
-  notes: string[]
+  created_at: string
+}
+
+type ConversationHistory = {
+  messages: ChatMessage[]
 }
 
 async function listRuns(refresh?: boolean) {
@@ -58,8 +65,14 @@ async function getRunMultiqcReport(pk: number) {
   })
 }
 
+async function getConversationHistory(pk: number) {
+  return await requestJSON<ConversationHistory>({
+    endpoint: `/runs/${pk}/chat/`,
+  })
+}
+
 async function runChat(pk: number, question: string) {
-  return await requestJSON<RunChat>({
+  return await requestJSON<ChatMessage>({
     endpoint: `/runs/${pk}/chat/`,
     method: "POST",
     body: { question },
@@ -113,5 +126,28 @@ function useRunChatMutation() {
   })
 }
 
-export { useRunsQuery, useRunQuery, useRunMultiqcReportMutation, useSyncRuns, useRunChatMutation }
-export type { RunSummary, Run, RunMultiqcReport, RunChat }
+function useConversationHistoryQuery(pk: number | null | undefined, enabled: boolean) {
+  const isValidPk = typeof pk === "number" && Number.isFinite(pk)
+
+  return useQuery({
+    queryKey: ["conversation", isValidPk ? pk : "invalid"],
+    queryFn: () => {
+      if (!isValidPk) {
+        throw new Error("Invalid run identifier")
+      }
+
+      return getConversationHistory(pk as number)
+    },
+    enabled: isValidPk && enabled,
+  })
+}
+
+export {
+  useRunsQuery,
+  useRunQuery,
+  useRunMultiqcReportMutation,
+  useSyncRuns,
+  useRunChatMutation,
+  useConversationHistoryQuery,
+}
+export type { RunSummary, Run, RunMultiqcReport, ChatMessage }

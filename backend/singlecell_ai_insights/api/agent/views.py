@@ -6,16 +6,35 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from singlecell_ai_insights.models import Conversation, Message
 from singlecell_ai_insights.models.run import Run
 from singlecell_ai_insights.services import agent
 
-from .serializers import AgentChatRequestSerializer
+from .serializers import AgentChatRequestSerializer, MessageSerializer
 
 logger = logging.getLogger(__name__)
 
 
 class RunAgentChatView(APIView):
     permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        """Retrieve conversation history for a run."""
+        run = get_object_or_404(Run, pk=pk)
+        conversation = (
+            Conversation.objects.filter(run=run)
+            .prefetch_related('messages')
+            .first()
+        )
+
+        if not conversation:
+            return Response({'messages': []}, status=status.HTTP_200_OK)
+
+        messages = conversation.messages.all()
+        serializer = MessageSerializer(messages, many=True)
+        return Response(
+            {'messages': serializer.data}, status=status.HTTP_200_OK
+        )
 
     def post(self, request, pk):
         run = get_object_or_404(Run, pk=pk)
@@ -27,8 +46,27 @@ class RunAgentChatView(APIView):
         if metric_key == '':
             metric_key = None
 
+        # Get or create conversation
+        conversation, _ = Conversation.objects.get_or_create(run=run)
+
+        # Save user message
+        Message.objects.create(
+            conversation=conversation, role=Message.ROLE_USER, content=question
+        )
+
+        # Get conversation history (last 10 messages for context)
+        messages_qs = conversation.messages.values('role', 'content').order_by(
+            '-created_at'
+        )[:10]
+        history = list(reversed(list(messages_qs)))
+
         try:
-            result = agent.chat(run.run_id, question, metric_key=metric_key)
+            result = agent.chat(
+                run.run_id,
+                question,
+                conversation_history=history,
+                metric_key=metric_key,
+            )
         except agent.AgentServiceError as exc:
             logger.warning(
                 'Agent chat failed for run %s: %s',
@@ -40,4 +78,18 @@ class RunAgentChatView(APIView):
                 status=status.HTTP_502_BAD_GATEWAY,
             )
 
-        return Response(result, status=status.HTTP_200_OK)
+        # Save assistant message
+        assistant_message = Message.objects.create(
+            conversation=conversation,
+            role=Message.ROLE_ASSISTANT,
+            content=result.get('answer', ''),
+            citations=result.get('citations', []),
+            notes=result.get('notes', []),
+            table_url=result.get('table_url'),
+            plot_url=result.get('plot_url'),
+            metric_key=result.get('metric_key'),
+        )
+
+        # Return the saved message instead of raw result
+        serializer = MessageSerializer(assistant_message)
+        return Response(serializer.data, status=status.HTTP_200_OK)

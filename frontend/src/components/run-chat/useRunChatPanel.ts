@@ -1,9 +1,9 @@
-import { useCallback, useContext, useMemo, useState } from "react"
+import { useCallback, useContext, useEffect, useMemo, useState } from "react"
 import type { FormEvent } from "react"
 
 import { ApiError } from "@/api/client"
-import type { RunChat } from "@/api/runs"
-import { useRunChatMutation } from "@/api/runs"
+import type { ChatMessage as ApiChatMessage } from "@/api/runs"
+import { useConversationHistoryQuery, useRunChatMutation } from "@/api/runs"
 import { GlobalErrorDialogContext } from "@/providers/global-error/global-error-dialog-context"
 
 import type { ChatMessage, TablePreviewData, UseRunChatPanelResult } from "./types"
@@ -20,6 +20,32 @@ function useRunChatPanel({ runId, enabled }: UseRunChatPanelOptions): UseRunChat
   const [textareaValue, setTextareaValue] = useState("")
   const chatMutation = useRunChatMutation()
   const globalErrorDialog = useContext(GlobalErrorDialogContext)
+
+  // Load conversation history on mount
+  const { data: historyData } = useConversationHistoryQuery(runId, enabled)
+
+  // Load conversation history into messages
+  useEffect(() => {
+    if (!historyData?.messages) return
+
+    const convertedMessages: ChatMessage[] = historyData.messages.map((msg: ApiChatMessage) => ({
+      id: String(msg.id),
+      role: msg.role,
+      content: msg.content,
+      status: "complete" as const,
+      citations: msg.citations,
+      notes: msg.notes,
+      tableUrl: msg.table_url,
+      plotUrl: msg.plot_url,
+      metricKey: msg.metric_key,
+      tablePreviewStatus: "idle" as const,
+      tablePreview: null,
+      tablePreviewError: null,
+      error: null,
+    }))
+
+    setMessages(convertedMessages)
+  }, [historyData])
 
   const composerDisabled = useMemo(() => {
     return !enabled || !Number.isFinite(runId) || chatMutation.isPending
@@ -136,11 +162,11 @@ function useRunChatPanel({ runId, enabled }: UseRunChatPanelOptions): UseRunChat
       chatMutation.mutate(
         { pk: numericRunId, question },
         {
-          onSuccess: (data: RunChat) => {
+          onSuccess: (data: ApiChatMessage) => {
             updateMessage(assistantMessageId, (message) => ({
               ...message,
               status: "complete",
-              content: data.answer,
+              content: data.content,
               citations: data.citations ?? [],
               notes: data.notes ?? [],
               tableUrl: data.table_url ?? null,
