@@ -13,7 +13,7 @@ function ChatMessageBubble(message: ChatMessageProps) {
   const isUser = message.role === "user"
   const isError = message.status === "error"
   const bubbleClasses = cn(
-    "max-w-3xl rounded-lg border p-4 text-sm shadow-xs",
+    "max-w-full rounded-lg border p-4 text-sm shadow-xs",
     isUser && !isError && "bg-primary text-primary-foreground",
     !isUser && !isError && "bg-background",
     isError && "border-destructive/40 bg-destructive/10 text-destructive",

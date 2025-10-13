@@ -49,7 +49,7 @@ function RunChatPanel({ runId, enabled, disabledReason, runName, runStatus }: Ru
   }, [runStatus])
 
   return (
-    <Card className={cn("flex flex-col border", !enabled && "opacity-90")}>
+    <Card className={cn("flex flex-col", !enabled && "opacity-90")}>
       <CardHeader className="flex-shrink-0">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -64,8 +64,8 @@ function RunChatPanel({ runId, enabled, disabledReason, runName, runStatus }: Ru
         {disabledReason ? <p className="text-sm text-muted-foreground">{disabledReason}</p> : null}
       </CardHeader>
 
-      <CardContent className="flex flex-1 flex-col gap-4 overflow-hidden">
-        <ScrollArea ref={scrollAreaRef} className="h-[400px] rounded-md border bg-muted/40 p-4">
+      <CardContent className="flex flex-1 flex-col gap-4 overflow-hidden px-2">
+        <ScrollArea ref={scrollAreaRef} className="h-[400px] rounded-md bg-muted/20 pr-3">
           <div className="space-y-4">
             {messages.length === 0 ? (
               <div className="text-sm text-muted-foreground">

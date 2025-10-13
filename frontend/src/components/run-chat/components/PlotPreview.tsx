@@ -13,7 +13,7 @@ function PlotPreview({ plotUrl, metricKey }: { plotUrl: string; metricKey: strin
           </a>
         </Button>
       </div>
-      <div className="overflow-hidden rounded-md border bg-background">
+      <div className="overflow-hidden">
         <img
           src={plotUrl}
           alt={metricKey ? `Plot for ${metricKey}` : "Run artifact plot"}
