@@ -1,3 +1,4 @@
+import { ImageLightbox } from "@/components/ui/image-lightbox"
 import { Spinner } from "@/components/ui/spinner"
 
 import type { ChatMessageProps } from "./ChatMessageBubble"
@@ -51,11 +52,11 @@ function FormattedMessage({ content }: { content: string }) {
       {parts.map((part, index) => {
         if (part.type === "image") {
           return (
-            <img
+            <ImageLightbox
               key={index}
               src={part.content}
               alt={part.alt || "Generated plot"}
-              className="max-w-full"
+              className="mx-auto max-w-[70%] cursor-pointer transition-opacity hover:opacity-80"
             />
           )
         }

@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button"
+import { ImageLightbox } from "@/components/ui/image-lightbox"
 
 function PlotPreview({ plotUrl, metricKey }: { plotUrl: string; metricKey: string | null }) {
   return (
@@ -14,11 +15,10 @@ function PlotPreview({ plotUrl, metricKey }: { plotUrl: string; metricKey: strin
         </Button>
       </div>
       <div className="overflow-hidden">
-        <img
+        <ImageLightbox
           src={plotUrl}
           alt={metricKey ? `Plot for ${metricKey}` : "Run artifact plot"}
-          className="max-h-96 w-full object-contain"
-          loading="lazy"
+          className="max-h-96 w-full cursor-pointer object-contain transition-opacity hover:opacity-80"
         />
       </div>
     </div>
