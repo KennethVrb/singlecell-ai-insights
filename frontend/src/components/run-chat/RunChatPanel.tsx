@@ -29,10 +29,16 @@ function RunChatPanel({ runId, enabled, disabledReason, runName, runStatus }: Ru
     composerDisabled,
   } = useRunChatPanel({ runId, enabled })
 
+  const scrollAreaRef = useRef<HTMLDivElement | null>(null)
   const endRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" })
+    if (scrollAreaRef.current && endRef.current) {
+      const viewport = scrollAreaRef.current.querySelector('[data-slot="scroll-area-viewport"]')
+      if (viewport) {
+        viewport.scrollTop = viewport.scrollHeight
+      }
+    }
   }, [messages])
 
   const headerStatus = useMemo(() => {
@@ -43,13 +49,13 @@ function RunChatPanel({ runId, enabled, disabledReason, runName, runStatus }: Ru
   }, [runStatus])
 
   return (
-    <Card className={cn("flex h-full flex-col border", !enabled && "opacity-90")}>
-      <CardHeader>
+    <Card className={cn("flex flex-col border", !enabled && "opacity-90")}>
+      <CardHeader className="flex-shrink-0">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <CardTitle className="text-lg">Run chat</CardTitle>
             <CardDescription>
-              Ask questions about {runName ? `run “${runName}”` : "this run"}. Responses may include
+              Ask questions about {runName ? `run "${runName}"` : "this run"}. Responses may include
               MultiQC-derived tables and plots.
             </CardDescription>
           </div>
@@ -58,8 +64,8 @@ function RunChatPanel({ runId, enabled, disabledReason, runName, runStatus }: Ru
         {disabledReason ? <p className="text-sm text-muted-foreground">{disabledReason}</p> : null}
       </CardHeader>
 
-      <CardContent className="flex h-full flex-col gap-4">
-        <ScrollArea className="flex-1 rounded-md border bg-muted/40 p-4">
+      <CardContent className="flex flex-1 flex-col gap-4 overflow-hidden">
+        <ScrollArea ref={scrollAreaRef} className="h-[400px] rounded-md border bg-muted/40 p-4">
           <div className="space-y-4">
             {messages.length === 0 ? (
               <div className="text-sm text-muted-foreground">
