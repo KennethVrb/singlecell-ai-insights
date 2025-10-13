@@ -22,7 +22,7 @@ class RunAgentChatView(APIView):
         """Retrieve conversation history for a run."""
         run = get_object_or_404(Run, pk=pk)
         conversation = (
-            Conversation.objects.filter(run=run)
+            Conversation.objects.filter(run=run, user=request.user)
             .prefetch_related('messages')
             .first()
         )
@@ -47,7 +47,9 @@ class RunAgentChatView(APIView):
             metric_key = None
 
         # Get or create conversation
-        conversation, _ = Conversation.objects.get_or_create(run=run)
+        conversation, _ = Conversation.objects.get_or_create(
+            run=run, user=request.user
+        )
 
         # Save user message
         Message.objects.create(
@@ -97,12 +99,15 @@ class RunAgentChatView(APIView):
     def delete(self, request, pk):
         """Delete conversation history for a run."""
         run = get_object_or_404(Run, pk=pk)
-        deleted_count, _ = Conversation.objects.filter(run=run).delete()
+        deleted_count, _ = Conversation.objects.filter(
+            run=run, user=request.user
+        ).delete()
 
         logger.info(
-            'Deleted %d conversation(s) for run %s',
+            'Deleted %d conversation(s) for run %s by user %s',
             deleted_count,
             run.pk or run.run_id,
+            request.user.username,
         )
 
         return Response(status=status.HTTP_204_NO_CONTENT)

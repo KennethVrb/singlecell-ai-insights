@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -5,14 +6,23 @@ class Conversation(models.Model):
     run = models.ForeignKey(
         'Run', on_delete=models.CASCADE, related_name='conversations'
     )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='conversations',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-updated_at']
+        unique_together = [['run', 'user']]
 
     def __str__(self):
-        return f'Conversation for {self.run.name} (updated {self.updated_at})'
+        return (
+            f'Conversation for {self.run.name} by {self.user.username} '
+            f'(updated {self.updated_at})'
+        )
 
 
 class Message(models.Model):

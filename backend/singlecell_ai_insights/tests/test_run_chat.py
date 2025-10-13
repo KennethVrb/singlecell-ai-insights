@@ -134,7 +134,7 @@ class ConversationHistoryTests(APITestCase):
 
     def test_get_conversation_returns_all_messages(self):
         run = self.create_run()
-        conversation = Conversation.objects.create(run=run)
+        conversation = Conversation.objects.create(run=run, user=self.user)
 
         msg1 = Message.objects.create(
             conversation=conversation,
@@ -225,7 +225,7 @@ class ConversationHistoryTests(APITestCase):
 
     def test_post_passes_conversation_history_to_agent(self):
         run = self.create_run()
-        conversation = Conversation.objects.create(run=run)
+        conversation = Conversation.objects.create(run=run, user=self.user)
 
         Message.objects.create(
             conversation=conversation,
@@ -264,7 +264,7 @@ class ConversationHistoryTests(APITestCase):
 
     def test_post_limits_conversation_history_to_last_10_messages(self):
         run = self.create_run()
-        conversation = Conversation.objects.create(run=run)
+        conversation = Conversation.objects.create(run=run, user=self.user)
 
         for i in range(12):
             Message.objects.create(
@@ -321,7 +321,7 @@ class ConversationHistoryTests(APITestCase):
 
     def test_post_reuses_existing_conversation(self):
         run = self.create_run()
-        conversation = Conversation.objects.create(run=run)
+        conversation = Conversation.objects.create(run=run, user=self.user)
 
         with patch(
             'singlecell_ai_insights.services.agent.chat',
@@ -388,6 +388,34 @@ class ConversationHistoryTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_conversations_are_user_specific(self):
+        run = self.create_run()
+        other_user = get_user_model().objects.create_user(
+            username='other-user',
+            password='strong-pass',
+        )
+
+        conversation1 = Conversation.objects.create(run=run, user=self.user)
+        Message.objects.create(
+            conversation=conversation1,
+            role=Message.ROLE_USER,
+            content='User 1 question',
+        )
+
+        conversation2 = Conversation.objects.create(run=run, user=other_user)
+        Message.objects.create(
+            conversation=conversation2,
+            role=Message.ROLE_USER,
+            content='User 2 question',
+        )
+
+        response = self.client.get(f'/api/runs/{run.pk}/chat/')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertEqual(len(data['messages']), 1)
+        self.assertEqual(data['messages'][0]['content'], 'User 1 question')
+
 
 class ConversationDeletionTests(APITestCase):
     def setUp(self):
@@ -406,7 +434,7 @@ class ConversationDeletionTests(APITestCase):
 
     def test_delete_removes_conversation_and_messages(self):
         run = self.create_run()
-        conversation = Conversation.objects.create(run=run)
+        conversation = Conversation.objects.create(run=run, user=self.user)
 
         Message.objects.create(
             conversation=conversation,
@@ -454,7 +482,7 @@ class ConversationDeletionTests(APITestCase):
 
     def test_delete_allows_fresh_start(self):
         run = self.create_run()
-        conversation = Conversation.objects.create(run=run)
+        conversation = Conversation.objects.create(run=run, user=self.user)
 
         Message.objects.create(
             conversation=conversation,
