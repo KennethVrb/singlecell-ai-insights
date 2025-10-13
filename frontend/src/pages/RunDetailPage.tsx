@@ -1,12 +1,12 @@
 import { Link, useParams } from "react-router-dom"
 
+import { RunChatPanel } from "@/components/run-chat/RunChatPanel"
 import { RunStatusBadge } from "@/components/RunStatusBadge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
-import { formatDateTime } from "@/lib/datetime"
-import { cn } from "@/lib/utils"
 import { useRunDetail } from "@/hooks/useRunDetail"
+import { formatDateTime } from "@/lib/datetime"
 
 function RunDetailPage() {
   const { runId } = useParams<{ runId: string }>()
@@ -97,11 +97,7 @@ function RunDetailPage() {
           <Card className="border">
             <CardHeader>
               <CardTitle>Run metrics</CardTitle>
-              <CardDescription>
-                {run?.normalized_context
-                  ? "Normalized context ready for visualization."
-                  : "Tabs for summary, samples, and quality tables."}
-              </CardDescription>
+              <CardDescription>Tabs for summary, samples, and quality tables.</CardDescription>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
               {isLoading ? (
@@ -109,10 +105,6 @@ function RunDetailPage() {
                   <Spinner />
                   <span>Loading normalized context…</span>
                 </div>
-              ) : run?.normalized_context ? (
-                <pre className="max-h-64 overflow-auto rounded bg-muted p-3 text-xs">
-                  {JSON.stringify(run.normalized_context, null, 2)}
-                </pre>
               ) : (
                 <p>
                   Normalized context is not yet available. Trigger normalization via the backend or
@@ -124,42 +116,17 @@ function RunDetailPage() {
         </section>
 
         <aside>
-          <Card
-            aria-disabled={!isChatReady}
-            className={cn(
-              "border h-full transition-opacity transition-colors",
-              !isChatReady &&
-                "pointer-events-none border-muted-foreground/60 bg-muted opacity-60 text-muted-foreground",
-            )}
-          >
-            <CardHeader>
-              <CardTitle>Chat activity</CardTitle>
-              <CardDescription className={cn(!isChatReady ? "text-muted-foreground" : undefined)}>
-                {isChatReady
-                  ? "Chat with Claude about this run once endpoints are connected."
-                  : "Chat becomes available after the run successfully completes."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className={cn("space-y-2 text-sm", "text-muted-foreground")}>
-              {isLoading ? (
-                <div className="flex items-center gap-2 text-foreground">
-                  <Spinner />
-                  <span>Preparing chat surface…</span>
-                </div>
-              ) : isChatReady ? (
-                <>
-                  <p>
-                    Embed `ChatPanel` once endpoints are live. Support streaming responses and
-                    history via `useRunChat`.
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Future work: add quick prompts, export transcript, and highlight references back
-                    to raw data.
-                  </p>
-                </>
-              ) : null}
-            </CardContent>
-          </Card>
+          <RunChatPanel
+            runId={run?.pk}
+            enabled={isChatReady}
+            disabledReason={
+              !isChatReady
+                ? "Chat becomes available after the run successfully completes."
+                : undefined
+            }
+            runName={run?.name}
+            runStatus={run?.status}
+          />
         </aside>
       </div>
     </div>

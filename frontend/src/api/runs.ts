@@ -27,9 +27,9 @@ type RunMultiqcReport = {
 type RunChat = {
   answer: string
   citations: string[]
-  table_url: string
-  plot_url: string
-  metric_key: string
+  table_url: string | null
+  plot_url: string | null
+  metric_key: string | null
   notes: string[]
 }
 
@@ -108,7 +108,8 @@ function useRunMultiqcReportMutation() {
 
 function useRunChatMutation() {
   return useMutation({
-    mutationFn: async (pk: number, question: string) => await runChat(pk, question),
+    mutationFn: async ({ pk, question }: { pk: number; question: string }) =>
+      await runChat(pk, question),
   })
 }
 

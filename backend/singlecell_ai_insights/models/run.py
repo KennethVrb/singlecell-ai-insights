@@ -34,9 +34,6 @@ class Run(models.Model):
         return f'{base}/pubdir/multiqc/multiqc_report.html'
 
     def get_multiqc_report_url(self):
-        import pdb
-
-        pdb.set_trace()
         if not self.output_dir_bucket:
             return None
         report_key = self.get_multiqc_report_s3_key()
