@@ -14,11 +14,18 @@ import { useRunChatPanel } from "./useRunChatPanel"
 type RunChatPanelProps = {
   runId: number | null | undefined
   enabled: boolean
+  isRunFailed?: boolean
   disabledReason?: string
   runName?: string
 }
 
-function RunChatPanel({ runId, enabled, disabledReason, runName }: RunChatPanelProps) {
+function RunChatPanel({
+  runId,
+  enabled,
+  isRunFailed = false,
+  disabledReason,
+  runName,
+}: RunChatPanelProps) {
   const {
     messages,
     textareaValue,
@@ -50,7 +57,13 @@ function RunChatPanel({ runId, enabled, disabledReason, runName }: RunChatPanelP
 
   return (
     <>
-      <Card className={cn("flex flex-col", !enabled && "opacity-90")}>
+      <Card
+        className={cn(
+          "flex flex-col",
+          !enabled && "opacity-90",
+          isRunFailed && "opacity-50 pointer-events-none",
+        )}
+      >
         <CardHeader className="flex-shrink-0">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -60,7 +73,7 @@ function RunChatPanel({ runId, enabled, disabledReason, runName }: RunChatPanelP
                 include MultiQC-derived tables and plots.
               </CardDescription>
             </div>
-            {messages.length > 0 && enabled && (
+            {messages.length > 0 && enabled && !isRunFailed && (
               <Button
                 variant="destructive"
                 onClick={() => setShowDeleteDialog(true)}

@@ -14,6 +14,7 @@ function RunDetailPage() {
     run,
     isLoading,
     isChatReady,
+    isRunFailed,
     isMultiqcAvailable,
     isMultiqcPending,
     handleDownloadMultiqc,
@@ -119,10 +120,13 @@ function RunDetailPage() {
           <RunChatPanel
             runId={run?.pk}
             enabled={isChatReady}
+            isRunFailed={isRunFailed}
             disabledReason={
-              !isChatReady
-                ? "Chat becomes available after the run successfully completes."
-                : undefined
+              isRunFailed
+                ? "Chat is unavailable for failed runs."
+                : !isChatReady
+                  ? "Chat becomes available after the run successfully completes."
+                  : undefined
             }
             runName={run?.name}
           />

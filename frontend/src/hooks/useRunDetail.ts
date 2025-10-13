@@ -40,6 +40,14 @@ function useRunDetail(runIdParam?: string) {
     hasShownError.current = true
   }, [error, globalErrorDialog, isError, numericRunId])
 
+  const isRunFailed = useMemo(() => {
+    if (!run?.status) {
+      return false
+    }
+
+    return ["FAILED", "ERROR"].includes(run.status.toUpperCase())
+  }, [run?.status])
+
   const isChatReady = useMemo(() => {
     if (!run?.status) {
       return false
@@ -89,6 +97,7 @@ function useRunDetail(runIdParam?: string) {
     run,
     isLoading,
     isChatReady,
+    isRunFailed,
     isMultiqcAvailable,
     isMultiqcPending: multiqcReportMutation.isPending,
     handleDownloadMultiqc,
