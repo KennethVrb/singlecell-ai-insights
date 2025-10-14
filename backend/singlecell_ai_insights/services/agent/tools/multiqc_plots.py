@@ -111,13 +111,21 @@ def find_and_generate_table_url(run_id, metric_key, question=None):
     Returns:
         str: Presigned URL or None if no table found
     """
-    # For most metrics, use the corresponding plot data table
-    plot_file = find_plot_for_metric(metric_key, question)
-    if plot_file:
-        # Convert plot filename to data table filename
-        # e.g., mqc_fastqc_..._plot_1.png -> mqc_fastqc_..._plot_1.txt
-        table_file = plot_file.replace('.png', '.txt')
-        return generate_table_url(run_id, table_file)
+    # For general metrics (duplication, gc, counts), use general stats
+    # For detailed analysis, use specific module tables
+    if metric_key:
+        metric_lower = metric_key.lower()
 
-    # Fallback to general stats table
+        # Use general stats for summary metrics
+        if any(
+            kw in metric_lower
+            for kw in ['dup', 'gc', 'percent', 'total', 'count', 'length']
+        ):
+            return generate_table_url(run_id, 'multiqc_general_stats.txt')
+
+        # Use FastQC module table for detailed FastQC metrics
+        if 'fastqc' in metric_lower:
+            return generate_table_url(run_id, 'multiqc_fastqc.txt')
+
+    # Default to general stats table
     return generate_table_url(run_id, 'multiqc_general_stats.txt')
