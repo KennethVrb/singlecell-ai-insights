@@ -35,3 +35,13 @@ def put_s3_bytes_and_presign(bucket, key, body, content_type):
         ExpiresIn=PRESIGN_TTL,
     )
     return url
+
+
+def generate_presigned_url(bucket, key):
+    """Generate presigned URL for an existing S3 object."""
+    url = s3.generate_presigned_url(
+        'get_object',
+        Params={'Bucket': bucket, 'Key': key},
+        ExpiresIn=PRESIGN_TTL,
+    )
+    return url
