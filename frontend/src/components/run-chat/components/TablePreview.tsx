@@ -1,13 +1,5 @@
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 
 import type { ChatMessageProps } from "./ChatMessageBubble"
 
@@ -41,25 +33,29 @@ function TablePreview({ message }: { message: ChatMessageProps }) {
       ) : null}
 
       {tablePreviewStatus === "ready" && tablePreview ? (
-        <div className="rounded-md border bg-background">
-          <Table>
-            <TableHeader>
-              <TableRow>
+        <div className="overflow-x-auto rounded-md border bg-background w-[1270px]">
+          <table className="w-max min-w-full text-sm">
+            <thead className="border-b bg-muted/50">
+              <tr>
                 {tablePreview.headers.map((header: string) => (
-                  <TableHead key={header}>{header}</TableHead>
+                  <th key={header} className="whitespace-nowrap px-3 py-2 text-left font-medium">
+                    {header}
+                  </th>
                 ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+              </tr>
+            </thead>
+            <tbody>
               {tablePreview.rows.map((row: string[], rowIndex: number) => (
-                <TableRow key={rowIndex}>
+                <tr key={rowIndex} className="border-b last:border-0">
                   {row.map((cell: string, cellIndex: number) => (
-                    <TableCell key={cellIndex}>{cell}</TableCell>
+                    <td key={cellIndex} className="whitespace-nowrap px-3 py-2">
+                      {cell}
+                    </td>
                   ))}
-                </TableRow>
+                </tr>
               ))}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         </div>
       ) : null}
     </div>

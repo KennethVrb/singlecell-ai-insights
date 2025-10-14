@@ -50,6 +50,14 @@ function useRunChatPanel({ runId, enabled }: UseRunChatPanelOptions): UseRunChat
     }))
 
     setMessages(convertedMessages)
+
+    // Load table previews for messages with table URLs
+    convertedMessages.forEach((msg) => {
+      if (msg.tableUrl && msg.role === "assistant") {
+        loadTablePreview(msg.id, msg.tableUrl)
+      }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [historyData])
 
   const composerDisabled = useMemo(() => {
@@ -273,16 +281,25 @@ function buildTablePreview(csvText: string): TablePreview {
   }
 
   const [headerLine, ...rest] = lines
-  const headers = parseCsvLine(headerLine)
-  const rows = rest.slice(0, 10).map((line) => parseCsvLine(line))
+
+  // Detect delimiter (tab or comma)
+  const delimiter = headerLine.includes("\t") ? "\t" : ","
+
+  const headers = parseCsvLine(headerLine, delimiter)
+  const rows = rest.slice(0, 10).map((line) => parseCsvLine(line, delimiter))
+
+  // Limit to first 8 columns to prevent overflow
+  const maxColumns = 8
+  const limitedHeaders = headers.slice(0, maxColumns)
+  const limitedRows = rows.map((row) => row.slice(0, maxColumns))
 
   return {
-    headers,
-    rows,
+    headers: limitedHeaders,
+    rows: limitedRows,
   }
 }
 
-function parseCsvLine(line: string): string[] {
+function parseCsvLine(line: string, delimiter = ","): string[] {
   const cells: string[] = []
   let current = ""
   let inQuotes = false
@@ -301,7 +318,7 @@ function parseCsvLine(line: string): string[] {
       continue
     }
 
-    if (character === "," && !inQuotes) {
+    if (character === delimiter && !inQuotes) {
       cells.push(current.trim())
       current = ""
       continue

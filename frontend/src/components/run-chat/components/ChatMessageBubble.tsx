@@ -22,7 +22,7 @@ function ChatMessageBubble(message: ChatMessageProps) {
     <div className={cn("flex w-full break-all", isUser ? "justify-end" : "justify-start")}>
       <div className={bubbleClasses}>
         <div>
-          <MessageContent message={message} isUser={isUser} />
+          <MessageContent message={message} />
           {message.notes?.length ? <Notes notes={message.notes} /> : null}
           {message.tableUrl ? <TablePreview message={message} /> : null}
           {message.plotUrl ? (
