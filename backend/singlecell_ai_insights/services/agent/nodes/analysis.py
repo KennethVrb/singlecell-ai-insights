@@ -1,7 +1,10 @@
 """Analysis nodes for sample lookup, metric lookup, and RAG."""
 
 from ..config import DUP_THRESH, MAPPED_MIN
-from ..tools import infer_metric_key_from_question
+from ..tools import (
+    generate_comparative_summary,
+    infer_metric_key_from_question,
+)
 
 
 def lookup_samples(state):
@@ -67,7 +70,7 @@ def lookup_samples(state):
 
 
 def lookup_metric(state):
-    """Extract specific metric values across samples."""
+    """Extract metric values with comparative analysis."""
     q = state['question'].lower()
     chosen = infer_metric_key_from_question(q, state['samples'])
     hits = []
@@ -77,6 +80,22 @@ def lookup_metric(state):
                 hits.append(
                     {'sample': s, 'metric': chosen, 'value': m[chosen]}
                 )
+
+        # Add comparative analysis
+        comparative = generate_comparative_summary(state['samples'], chosen)
+        if comparative:
+            # Add outlier flags to table
+            outlier_samples = {
+                o['sample'] for o in comparative['stats']['outliers']
+            }
+            for hit in hits:
+                if hit['sample'] in outlier_samples:
+                    hit['outlier'] = True
+
+            # Add insights to notes
+            if comparative['insights']:
+                state['notes'].extend(comparative['insights'])
+
     state['metric_key'] = chosen
     state['tabular'] = hits or None
     return state
