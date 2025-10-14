@@ -12,6 +12,7 @@ function ChatMessageBubble(message: ChatMessageProps) {
   const bubbleClasses = cn(
     "max-w-full rounded-lg border p-4 text-sm shadow-xs",
     isUser && !isError && "bg-primary text-primary-foreground",
+    !isUser && "w-[1300px]",
     !isUser && !isError && "bg-background",
     isError && "border-destructive/40 bg-destructive/10 text-destructive",
   )

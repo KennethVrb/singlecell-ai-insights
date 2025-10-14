@@ -106,7 +106,7 @@ def rag(state):
     vs = state.get('vs')
     if vs:
         retr = vs.as_retriever(search_kwargs={'k': 4})
-        state['retrieved'] = retr.get_relevant_documents(state['question'])
+        state['retrieved'] = retr.invoke(state['question'])
     else:
         state['retrieved'] = []
     return state
