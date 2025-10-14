@@ -21,7 +21,7 @@ def chat(run_id, question, conversation_history=None, metric_key=None):
         metric_key: Optional metric key to focus on
 
     Returns:
-        dict with answer, citations, table_url, plot_url, metric_key, notes
+        dict with answer, citations, metric_key, notes
 
     Raises:
         AgentServiceError: If any error occurs during processing
@@ -52,8 +52,6 @@ def chat(run_id, question, conversation_history=None, metric_key=None):
     return {
         'answer': result.get('answer', ''),
         'citations': result.get('citations', []),
-        'table_url': result.get('table_url'),
-        'plot_url': result.get('plot_url'),
         'metric_key': result.get('metric_key'),
         'notes': result.get('notes', []),
     }

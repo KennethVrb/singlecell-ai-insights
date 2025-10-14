@@ -12,10 +12,15 @@ def synthesize(state):
     if state.get('tabular'):
         rows = state['tabular'][:10]
         if rows:
-            header = list(rows[0].keys())
+            # Collect all unique keys across all rows
+            all_keys = set()
+            for r in rows:
+                all_keys.update(r.keys())
+            header = sorted(all_keys)
+
             lines = [','.join(header)]
             for r in rows:
-                lines.append(','.join(str(r[h]) for h in header))
+                lines.append(','.join(str(r.get(h, '')) for h in header))
             context_blocks.append('TABLE_PREVIEW\n' + '\n'.join(lines))
 
     # Retrieved panels
@@ -24,13 +29,6 @@ def synthesize(state):
             mod = d.metadata.get('module')
             snippet = d.page_content[:800]
             context_blocks.append(f'[{mod}] {snippet}')
-
-    # Artifact links
-    links = []
-    if state.get('table_url'):
-        links.append(f'CSV: {state["table_url"]}')
-    if state.get('plot_url'):
-        links.append(f'Plot: {state["plot_url"]}')
 
     # Format conversation history
     history_text = ''
@@ -43,6 +41,18 @@ def synthesize(state):
             history_lines.append(f'{role.upper()}: {content}')
         history_text = '\n'.join(history_lines)
 
+    # Build artifact instructions (without actual URLs to avoid truncation)
+    artifact_instructions = []
+    if state.get('table_url'):
+        artifact_instructions.append(
+            '- Mention that a CSV download is available '
+            'at the end of your response'
+        )
+    if state.get('plot_url'):
+        artifact_instructions.append(
+            '- Mention that a plot visualization is available'
+        )
+
     prompt = f"""
     You are a genomics QC assistant for MultiQC (nf-core/scrnaseq).
     
@@ -51,14 +61,11 @@ def synthesize(state):
     
     Current Question: {state['question']}
 
-    Artifacts (presigned):
-    {chr(10).join(links) if links else 'None'}
-
     Context (table preview and module snippets):
     {chr(10).join(context_blocks) if context_blocks else 'None'}
 
     Instructions:
-    - Answer concisely and concretely.
+    - Answer concisely and concretely using markdown formatting.
     - If the user question has nothing to with the run, 
       act like any normal assistant. Just answer based on your knowledge.
     - Dont mention anything about system given context. 
@@ -69,10 +76,21 @@ def synthesize(state):
         (e.g., "trim adapters", "increase sequencing depth", 
         "adjust UMI dedup settings").
     - Use conversation history to provide contextual answers.
+    {chr(10).join(artifact_instructions) if artifact_instructions else ''}
     """
 
     msg = llm.invoke(prompt)
-    state['answer'] = msg.content
+    answer = msg.content
+
+    # Append artifact links after LLM response to avoid truncation
+    if state.get('table_url'):
+        answer += '\n\n---\n\n**📊 Download Full Data**\n\n'
+        answer += f'[Download MultiQC Data (CSV)]({state["table_url"]})'
+    if state.get('plot_url'):
+        answer += '\n\n---\n\n**📈 Visualization**\n\n'
+        answer += f'![Quality Metrics Plot]({state["plot_url"]})'
+
+    state['answer'] = answer
     # naive citations list from retrieved modules
     state['citations'] = sorted(
         list(

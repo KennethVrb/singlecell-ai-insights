@@ -40,8 +40,6 @@ class Message(models.Model):
     content = models.TextField()
     citations = models.JSONField(default=list, blank=True)
     notes = models.JSONField(default=list, blank=True)
-    table_url = models.URLField(null=True, blank=True)
-    plot_url = models.URLField(null=True, blank=True)
     metric_key = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

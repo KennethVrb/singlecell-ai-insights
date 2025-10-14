@@ -30,8 +30,6 @@ type ChatMessage = {
   content: string
   citations: string[]
   notes: string[]
-  table_url: string | null
-  plot_url: string | null
   metric_key: string | null
   created_at: string
 }

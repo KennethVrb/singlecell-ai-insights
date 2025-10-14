@@ -1,6 +1,8 @@
+import { Download } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 
+import { Button } from "@/components/ui/button"
 import { ImageLightbox } from "@/components/ui/image-lightbox"
 import { Spinner } from "@/components/ui/spinner"
 
@@ -46,8 +48,47 @@ function FormattedMessage({ content, isUser }: { content: string; isUser: boolea
               <ImageLightbox
                 src={src}
                 alt={alt || "Generated plot"}
-                className="mx-auto max-w-[70%] cursor-pointer transition-opacity hover:opacity-80"
+                className="mx-auto max-w-[90%] cursor-pointer transition-opacity hover:opacity-80"
               />
+            )
+          },
+          // Custom link renderer - style download links as buttons
+          a: ({ href, children }) => {
+            if (!href) return <span>{children}</span>
+
+            const isDownloadLink =
+              href.includes("multiqc") ||
+              href.includes(".csv") ||
+              href.includes(".txt") ||
+              href.includes(".png") ||
+              String(children).toLowerCase().includes("download")
+
+            if (isDownloadLink) {
+              // Extract clean button text - if children is the URL, use a default label
+              let buttonText = children
+              if (typeof children === "string" && children.startsWith("http")) {
+                buttonText = "Download File"
+              }
+
+              return (
+                <Button asChild size="sm" variant="outline" className="my-2">
+                  <a href={href} target="_blank" rel="noopener noreferrer">
+                    <Download className="mr-2 h-4 w-4" />
+                    {buttonText}
+                  </a>
+                </Button>
+              )
+            }
+
+            return (
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`underline hover:no-underline ${isUser ? "text-white" : "text-primary"}`}
+              >
+                {children}
+              </a>
             )
           },
           // Style lists

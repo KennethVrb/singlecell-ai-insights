@@ -4,13 +4,6 @@ type ChatRole = "user" | "assistant"
 
 type ChatMessageStatus = "pending" | "complete" | "error"
 
-type TablePreviewStatus = "idle" | "loading" | "ready" | "error"
-
-type TablePreviewData = {
-  headers: string[]
-  rows: string[][]
-} | null
-
 type ChatMessage = {
   id: string
   role: ChatRole
@@ -18,12 +11,7 @@ type ChatMessage = {
   status: ChatMessageStatus
   citations: string[]
   notes: string[]
-  tableUrl: string | null
-  plotUrl: string | null
   metricKey: string | null
-  tablePreviewStatus: TablePreviewStatus
-  tablePreview: TablePreviewData
-  tablePreviewError: string | null
   error: string | null
 }
 
@@ -38,4 +26,4 @@ type UseRunChatPanelResult = {
   isDeletingHistory: boolean
 }
 
-export type { ChatMessage, TablePreviewData, TablePreviewStatus, UseRunChatPanelResult }
+export type { ChatMessage, UseRunChatPanelResult }

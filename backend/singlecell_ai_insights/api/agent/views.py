@@ -87,8 +87,6 @@ class RunAgentChatView(APIView):
             content=result.get('answer', ''),
             citations=result.get('citations', []),
             notes=result.get('notes', []),
-            table_url=result.get('table_url'),
-            plot_url=result.get('plot_url'),
             metric_key=result.get('metric_key'),
         )
 

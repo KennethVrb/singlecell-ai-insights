@@ -21,8 +21,6 @@ class MessageSerializer(serializers.ModelSerializer):
             'content',
             'citations',
             'notes',
-            'table_url',
-            'plot_url',
             'metric_key',
             'created_at',
         ]

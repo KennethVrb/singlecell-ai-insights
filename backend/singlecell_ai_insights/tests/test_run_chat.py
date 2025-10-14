@@ -42,8 +42,6 @@ class RunAgentChatTests(APITestCase):
         payload = {
             'answer': 'Example answer',
             'citations': ['module'],
-            'table_url': 'https://example.com/table.csv',
-            'plot_url': 'https://example.com/plot.png',
             'metric_key': 'duplication',
             'notes': ['note'],
         }
@@ -62,8 +60,6 @@ class RunAgentChatTests(APITestCase):
         self.assertEqual(data['content'], 'Example answer')
         self.assertEqual(data['role'], Message.ROLE_ASSISTANT)
         self.assertEqual(data['citations'], ['module'])
-        self.assertEqual(data['table_url'], 'https://example.com/table.csv')
-        self.assertEqual(data['plot_url'], 'https://example.com/plot.png')
         self.assertEqual(data['metric_key'], 'duplication')
 
         mock_chat.assert_called_once_with(
@@ -197,8 +193,6 @@ class ConversationHistoryTests(APITestCase):
             return_value={
                 'answer': 'Agent response',
                 'citations': ['fastqc', 'picard'],
-                'table_url': 'https://example.com/table.csv',
-                'plot_url': 'https://example.com/plot.png',
                 'metric_key': 'duplication',
                 'notes': ['Note 1'],
             },
@@ -218,8 +212,6 @@ class ConversationHistoryTests(APITestCase):
         msg = assistant_messages.first()
         self.assertEqual(msg.content, 'Agent response')
         self.assertEqual(msg.citations, ['fastqc', 'picard'])
-        self.assertEqual(msg.table_url, 'https://example.com/table.csv')
-        self.assertEqual(msg.plot_url, 'https://example.com/plot.png')
         self.assertEqual(msg.metric_key, 'duplication')
         self.assertEqual(msg.notes, ['Note 1'])
 

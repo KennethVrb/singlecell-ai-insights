@@ -2,8 +2,6 @@ import { cn } from "@/lib/utils"
 
 import { MessageContent } from "./MessageContent"
 import { Notes } from "./Notes"
-import { PlotPreview } from "./PlotPreview"
-import { TablePreview } from "./TablePreview"
 import type { UseRunChatPanelResult } from "../types"
 
 type ChatMessageProps = UseRunChatPanelResult["messages"][number]
@@ -24,10 +22,6 @@ function ChatMessageBubble(message: ChatMessageProps) {
         <div>
           <MessageContent message={message} />
           {message.notes?.length ? <Notes notes={message.notes} /> : null}
-          {message.tableUrl ? <TablePreview message={message} /> : null}
-          {message.plotUrl ? (
-            <PlotPreview plotUrl={message.plotUrl} metricKey={message.metricKey} />
-          ) : null}
         </div>
       </div>
     </div>
