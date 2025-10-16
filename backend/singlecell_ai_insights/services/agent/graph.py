@@ -48,4 +48,9 @@ def build_graph():
     return graph.compile()
 
 
+def build_streaming_graph():
+    """Build and compile the agent workflow graph with streaming enabled."""
+    return build_graph()
+
+
 APP_GRAPH = build_graph()

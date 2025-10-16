@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils"
 
+import { AgentThinking } from "./AgentThinking"
 import { MessageContent } from "./MessageContent"
 import { Notes } from "./Notes"
 import type { UseRunChatPanelResult } from "../types"
@@ -18,11 +19,17 @@ function ChatMessageBubble(message: ChatMessageProps) {
   )
 
   return (
-    <div className={cn("flex w-full break-all", isUser ? "justify-end" : "justify-start")}>
+    <div className={cn("flex w-full break-word", isUser ? "justify-end" : "justify-start")}>
       <div className={bubbleClasses}>
         <div>
-          <MessageContent message={message} />
-          {message.notes?.length ? <Notes notes={message.notes} /> : null}
+          {message.status === "pending" && message.agentStatus ? (
+            <AgentThinking agentStatus={message.agentStatus} />
+          ) : (
+            <>
+              <MessageContent message={message} />
+              {message.notes?.length ? <Notes notes={message.notes} /> : null}
+            </>
+          )}
         </div>
       </div>
     </div>

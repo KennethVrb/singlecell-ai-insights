@@ -2,15 +2,15 @@ import { useCallback, useContext, useEffect, useMemo, useState } from "react"
 import type { FormEvent } from "react"
 
 import { ApiError } from "@/api/client"
-import type { ChatMessage as ApiChatMessage } from "@/api/runs"
+import type { ChatMessage as ApiChatMessage } from "@/api/chat"
 import {
+  streamChat,
   useConversationHistoryQuery,
   useDeleteConversationHistoryMutation,
-  useRunChatMutation,
-} from "@/api/runs"
+} from "@/api/chat"
 import { GlobalErrorDialogContext } from "@/providers/global-error/global-error-dialog-context"
 
-import type { ChatMessage, UseRunChatPanelResult } from "./types"
+import type { AgentStep, ChatMessage, UseRunChatPanelResult } from "./types"
 
 type UseRunChatPanelOptions = {
   runId: number | null | undefined
@@ -20,7 +20,7 @@ type UseRunChatPanelOptions = {
 function useRunChatPanel({ runId, enabled }: UseRunChatPanelOptions): UseRunChatPanelResult {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [textareaValue, setTextareaValue] = useState("")
-  const chatMutation = useRunChatMutation()
+  const [isStreaming, setIsStreaming] = useState(false)
   const deleteMutation = useDeleteConversationHistoryMutation()
   const globalErrorDialog = useContext(GlobalErrorDialogContext)
 
@@ -46,8 +46,8 @@ function useRunChatPanel({ runId, enabled }: UseRunChatPanelOptions): UseRunChat
   }, [historyData])
 
   const composerDisabled = useMemo(() => {
-    return !enabled || !Number.isFinite(runId) || chatMutation.isPending
-  }, [enabled, runId, chatMutation.isPending])
+    return !enabled || !Number.isFinite(runId) || isStreaming
+  }, [enabled, runId, isStreaming])
 
   const updateMessage = useCallback(
     (messageId: string, updater: (previous: ChatMessage) => ChatMessage) => {
@@ -84,6 +84,7 @@ function useRunChatPanel({ runId, enabled }: UseRunChatPanelOptions): UseRunChat
       const userMessageId = createMessageId()
       const assistantMessageId = createMessageId()
 
+      // Add user message and pending assistant message
       setMessages((previous) => [
         ...previous,
         {
@@ -105,58 +106,80 @@ function useRunChatPanel({ runId, enabled }: UseRunChatPanelOptions): UseRunChat
           notes: [],
           metricKey: null,
           error: null,
+          agentStatus: {
+            currentStep: null,
+            completedSteps: [],
+            message: "Initializing...",
+          },
         },
       ])
 
       setTextareaValue("")
+      setIsStreaming(true)
 
-      chatMutation.mutate(
-        { pk: numericRunId, question },
-        {
-          onSuccess: (data: ApiChatMessage) => {
-            updateMessage(assistantMessageId, (message) => ({
-              ...message,
-              status: "complete",
-              content: data.content,
-              citations: data.citations ?? [],
-              notes: data.notes ?? [],
-              metricKey: data.metric_key ?? null,
-            }))
-          },
-          onError: (error) => {
-            const errorMessage =
-              error instanceof Error ? error.message : "Unable to fetch agent response."
+      // Use streamChat API
+      streamChat(numericRunId, question, {
+        onStatus: (step, message) => {
+          updateMessage(assistantMessageId, (msg) => {
+            const currentSteps = msg.agentStatus?.completedSteps ?? []
+            // Only add step if it's not already in the list
+            const newCompletedSteps = currentSteps.includes(step as AgentStep)
+              ? currentSteps
+              : [...currentSteps, step as AgentStep]
 
-            updateMessage(assistantMessageId, (message) => ({
-              ...message,
-              status: "error",
-              error: errorMessage,
-            }))
-
-            if (globalErrorDialog) {
-              const status = error instanceof ApiError ? error.status : 0
-              const detail = error instanceof ApiError ? error.data : null
-
-              globalErrorDialog.showError({
-                status,
-                endpoint: `/runs/${numericRunId}/chat/`,
-                message: errorMessage,
-                detail,
-              })
+            return {
+              ...msg,
+              agentStatus: {
+                currentStep: step as AgentStep,
+                completedSteps: newCompletedSteps,
+                message,
+              },
             }
-          },
+          })
         },
-      )
+        onAnswer: (content) => {
+          updateMessage(assistantMessageId, (msg) => ({
+            ...msg,
+            status: "complete",
+            content: content.answer,
+            citations: content.citations ?? [],
+            notes: content.notes ?? [],
+            metricKey: content.metric_key ?? null,
+            agentStatus: undefined,
+          }))
+        },
+        onError: (errorMessage) => {
+          updateMessage(assistantMessageId, (msg) => ({
+            ...msg,
+            status: "error",
+            error: errorMessage,
+            agentStatus: undefined,
+          }))
+          setIsStreaming(false)
+        },
+        onComplete: () => {
+          setIsStreaming(false)
+        },
+      }).catch((error) => {
+        updateMessage(assistantMessageId, (msg) => ({
+          ...msg,
+          status: "error",
+          error: "Connection to agent failed",
+          agentStatus: undefined,
+        }))
+        setIsStreaming(false)
+
+        if (globalErrorDialog) {
+          globalErrorDialog.showError({
+            status: 0,
+            endpoint: `/runs/${numericRunId}/chat/stream/`,
+            message: error instanceof Error ? error.message : "Streaming connection failed",
+            detail: null,
+          })
+        }
+      })
     },
-    [
-      chatMutation,
-      composerDisabled,
-      enabled,
-      globalErrorDialog,
-      runId,
-      textareaValue,
-      updateMessage,
-    ],
+    [composerDisabled, enabled, globalErrorDialog, runId, textareaValue, updateMessage],
   )
 
   const handleDeleteHistory = useCallback(() => {
@@ -193,7 +216,7 @@ function useRunChatPanel({ runId, enabled }: UseRunChatPanelOptions): UseRunChat
     textareaValue,
     setTextareaValue,
     handleSubmit,
-    isSubmitting: chatMutation.isPending,
+    isSubmitting: isStreaming,
     composerDisabled,
     handleDeleteHistory,
     isDeletingHistory: deleteMutation.isPending,

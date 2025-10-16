@@ -96,7 +96,7 @@ function RunChatPanel({
         </CardHeader>
 
         <CardContent className="flex flex-1 flex-col gap-4 overflow-hidden px-2">
-          <ScrollArea ref={scrollAreaRef} className="h-[400px] rounded-md bg-muted/20 px-4">
+          <ScrollArea ref={scrollAreaRef} className="h-[425px] rounded-md bg-muted/20 px-4">
             <div className="space-y-4">
               {messages.map((message) => (
                 <ChatMessageBubble key={message.id} {...message} />

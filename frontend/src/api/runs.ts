@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { requestJSON } from "./client"
+import { API_ENDPOINTS } from "./endpoints"
 
 type RunSummary = {
   pk: number
@@ -24,20 +25,6 @@ type RunMultiqcReport = {
   multiqc_report_url: string
 }
 
-type ChatMessage = {
-  id: number
-  role: "user" | "assistant"
-  content: string
-  citations: string[]
-  notes: string[]
-  metric_key: string | null
-  created_at: string
-}
-
-type ConversationHistory = {
-  messages: ChatMessage[]
-}
-
 async function listRuns(refresh?: boolean) {
   let params = {}
 
@@ -46,41 +33,20 @@ async function listRuns(refresh?: boolean) {
   }
 
   return await requestJSON<RunSummary[]>({
-    endpoint: "/runs/",
+    endpoint: API_ENDPOINTS.RUNS.LIST,
     params,
   })
 }
 
 async function getRun(pk: number) {
   return await requestJSON<Run>({
-    endpoint: `/runs/${pk}/`,
+    endpoint: API_ENDPOINTS.RUNS.DETAIL(pk),
   })
 }
 
 async function getRunMultiqcReport(pk: number) {
   return await requestJSON<RunMultiqcReport>({
-    endpoint: `/runs/${pk}/multiqc-report/`,
-  })
-}
-
-async function getConversationHistory(pk: number) {
-  return await requestJSON<ConversationHistory>({
-    endpoint: `/runs/${pk}/chat/`,
-  })
-}
-
-async function runChat(pk: number, question: string) {
-  return await requestJSON<ChatMessage>({
-    endpoint: `/runs/${pk}/chat/`,
-    method: "POST",
-    body: { question },
-  })
-}
-
-async function deleteConversationHistory(pk: number) {
-  return await requestJSON<void>({
-    endpoint: `/runs/${pk}/chat/`,
-    method: "DELETE",
+    endpoint: API_ENDPOINTS.RUNS.MULTIQC_REPORT(pk),
   })
 }
 
@@ -124,47 +90,5 @@ function useRunMultiqcReportMutation() {
   })
 }
 
-function useRunChatMutation() {
-  return useMutation({
-    mutationFn: async ({ pk, question }: { pk: number; question: string }) =>
-      await runChat(pk, question),
-  })
-}
-
-function useConversationHistoryQuery(pk: number | null | undefined, enabled: boolean) {
-  const isValidPk = typeof pk === "number" && Number.isFinite(pk)
-
-  return useQuery({
-    queryKey: ["conversation", isValidPk ? pk : "invalid"],
-    queryFn: () => {
-      if (!isValidPk) {
-        throw new Error("Invalid run identifier")
-      }
-
-      return getConversationHistory(pk as number)
-    },
-    enabled: isValidPk && enabled,
-  })
-}
-
-function useDeleteConversationHistoryMutation() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (pk: number) => await deleteConversationHistory(pk),
-    onSuccess: (_, pk) => {
-      queryClient.setQueryData(["conversation", pk], { messages: [] })
-    },
-  })
-}
-
-export {
-  useRunsQuery,
-  useRunQuery,
-  useRunMultiqcReportMutation,
-  useSyncRuns,
-  useRunChatMutation,
-  useConversationHistoryQuery,
-  useDeleteConversationHistoryMutation,
-}
-export type { RunSummary, Run, RunMultiqcReport, ChatMessage }
+export { useRunsQuery, useRunQuery, useRunMultiqcReportMutation, useSyncRuns }
+export type { RunSummary, Run, RunMultiqcReport }

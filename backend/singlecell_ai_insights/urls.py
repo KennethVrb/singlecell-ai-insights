@@ -1,7 +1,10 @@
 from django.contrib import admin
 from django.urls import path
 
-from singlecell_ai_insights.api.agent.views import RunAgentChatView
+from singlecell_ai_insights.api.agent.views import (
+    RunAgentChatStreamView,
+    RunAgentChatView,
+)
 from singlecell_ai_insights.api.auth import (
     CookieTokenObtainPairView,
     CookieTokenRefreshView,
@@ -43,5 +46,10 @@ urlpatterns = [
         'api/runs/<int:pk>/chat/',
         RunAgentChatView.as_view(),
         name='run-chat',
+    ),
+    path(
+        'api/runs/<int:pk>/chat/stream/',
+        RunAgentChatStreamView.as_view(),
+        name='run-chat-stream',
     ),
 ]

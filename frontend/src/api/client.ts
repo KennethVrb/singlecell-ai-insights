@@ -1,3 +1,5 @@
+import { API_ENDPOINTS } from "./endpoints"
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api"
 const UNAUTHORIZED_EVENT = "auth:unauthorized"
 const API_ERROR_EVENT = "api:error"
@@ -29,6 +31,39 @@ type RequestInput = {
   headers?: HeadersInit
   options?: RequestOptions
   params?: Record<string, string>
+}
+
+function getErrorMessage(detail: unknown, fallback: string) {
+  if (detail && typeof detail === "object" && "detail" in detail) {
+    const value = (detail as { detail?: unknown }).detail
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value
+    }
+  }
+
+  return fallback
+}
+
+async function safeReadJSON(response: Response): Promise<unknown> {
+  try {
+    return await response.json()
+  } catch {
+    return null
+  }
+}
+
+async function attemptTokenRefresh(): Promise<boolean> {
+  try {
+    const refreshResponse = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.REFRESH}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({}),
+    })
+    return refreshResponse.ok
+  } catch {
+    return false
+  }
 }
 
 async function requestJSON<T>({
@@ -64,24 +99,13 @@ async function requestJSON<T>({
   // If 401 and not already a refresh endpoint, try refreshing token once
   if (
     response.status === 401 &&
-    !endpoint.includes("/auth/refresh/") &&
-    !endpoint.includes("/auth/login/")
+    !endpoint.includes(API_ENDPOINTS.AUTH.REFRESH) &&
+    !endpoint.includes(API_ENDPOINTS.AUTH.LOGIN)
   ) {
-    try {
-      // Attempt token refresh
-      const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({}),
-      })
-
-      if (refreshResponse.ok) {
-        // Retry original request with new token
-        response = await fetch(url.toString(), config)
-      }
-    } catch {
-      // Refresh failed, continue with original 401 response
+    const refreshed = await attemptTokenRefresh()
+    if (refreshed) {
+      // Retry original request with new token
+      response = await fetch(url.toString(), config)
     }
   }
 
@@ -109,24 +133,63 @@ async function requestJSON<T>({
   return (await response.json()) as T
 }
 
-function getErrorMessage(detail: unknown, fallback: string) {
-  if (detail && typeof detail === "object" && "detail" in detail) {
-    const value = (detail as { detail?: unknown }).detail
-    if (typeof value === "string" && value.trim().length > 0) {
-      return value
+async function requestStream({
+  endpoint,
+  method = "POST",
+  body,
+  headers,
+  options,
+}: RequestInput): Promise<Response> {
+  const config: RequestInit = {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      ...headers,
+    },
+    credentials: "include",
+    ...options,
+  }
+
+  const url = new URL(`${API_BASE_URL}${endpoint}`)
+
+  if (body !== undefined) {
+    config.body = JSON.stringify(body)
+  }
+
+  let response = await fetch(url.toString(), config)
+
+  // If 401 and not already a refresh endpoint, try refreshing token once
+  if (
+    response.status === 401 &&
+    !endpoint.includes(API_ENDPOINTS.AUTH.REFRESH) &&
+    !endpoint.includes(API_ENDPOINTS.AUTH.LOGIN)
+  ) {
+    const refreshed = await attemptTokenRefresh()
+    if (refreshed) {
+      // Retry original request with new token
+      response = await fetch(url.toString(), config)
     }
   }
 
-  return fallback
-}
+  if (!response.ok) {
+    const detail = await safeReadJSON(response)
+    const message = getErrorMessage(detail, response.statusText)
 
-async function safeReadJSON(response: Response): Promise<unknown> {
-  try {
-    return await response.json()
-  } catch {
-    return null
+    if (typeof window !== "undefined") {
+      if (response.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent(UNAUTHORIZED_EVENT, {
+            detail: { status: response.status, endpoint: url.pathname },
+          }),
+        )
+      }
+    }
+
+    throw new ApiError(response.status, message, detail)
   }
+
+  return response
 }
 
-export { requestJSON, ApiError, UNAUTHORIZED_EVENT, API_ERROR_EVENT }
+export { requestJSON, requestStream, ApiError, UNAUTHORIZED_EVENT, API_ERROR_EVENT }
 export type { ApiErrorEventDetail }

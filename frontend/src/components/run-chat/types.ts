@@ -4,6 +4,14 @@ type ChatRole = "user" | "assistant"
 
 type ChatMessageStatus = "pending" | "complete" | "error"
 
+type AgentStep = "load" | "index" | "analyze" | "table" | "plot" | "synthesize"
+
+type AgentStatus = {
+  currentStep: AgentStep | null
+  completedSteps: AgentStep[]
+  message: string
+}
+
 type ChatMessage = {
   id: string
   role: ChatRole
@@ -13,6 +21,7 @@ type ChatMessage = {
   notes: string[]
   metricKey: string | null
   error: string | null
+  agentStatus?: AgentStatus
 }
 
 type UseRunChatPanelResult = {
@@ -26,4 +35,4 @@ type UseRunChatPanelResult = {
   isDeletingHistory: boolean
 }
 
-export type { ChatMessage, UseRunChatPanelResult }
+export type { AgentStep, AgentStatus, ChatMessage, UseRunChatPanelResult }
