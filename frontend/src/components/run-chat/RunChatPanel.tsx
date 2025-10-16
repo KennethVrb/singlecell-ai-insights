@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 
 import { ChatMessageBubble } from "./components/ChatMessageBubble"
 import { ClearHistoryDialog } from "./components/ClearHistoryDialog"
+import { SuggestedQuestions } from "./components/SuggestedQuestions"
 import { useRunChatPanel } from "./useRunChatPanel"
 
 type RunChatPanelProps = {
@@ -98,6 +99,23 @@ function RunChatPanel({
         <CardContent className="flex flex-1 flex-col gap-4 overflow-hidden px-2">
           <ScrollArea ref={scrollAreaRef} className="h-[425px] rounded-md bg-muted/20 px-4">
             <div className="space-y-4">
+              {messages.length === 0 && enabled && !isRunFailed && (
+                <div className="py-8">
+                  <SuggestedQuestions
+                    onSelect={(question) => {
+                      setTextareaValue(question)
+                      // Submit immediately
+                      setTimeout(() => {
+                        const form = document.querySelector("form")
+                        if (form) {
+                          form.requestSubmit()
+                        }
+                      }, 0)
+                    }}
+                    disabled={composerDisabled}
+                  />
+                </div>
+              )}
               {messages.map((message) => (
                 <ChatMessageBubble key={message.id} {...message} />
               ))}
