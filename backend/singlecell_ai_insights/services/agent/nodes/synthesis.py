@@ -128,15 +128,19 @@ def synthesize(state):
     """
 
     msg = llm.invoke(prompt)
-    answer = msg.content
+
+    answer = ''
+
+    if state.get('plot_url'):
+        answer += f'![Quality Metrics Plot]({state["plot_url"]})'
+
+    answer += '\n\n---\n\n**Explanation**\n\n'
+    answer += msg.content
 
     # Append artifact links after LLM response to avoid truncation
     if state.get('table_url'):
-        answer += '\n\n---\n\n**📊 Download Full Data**\n\n'
-        answer += f'[Download MultiQC Data (CSV)]({state["table_url"]})'
-    if state.get('plot_url'):
-        answer += '\n\n---\n\n**📈 Visualization**\n\n'
-        answer += f'![Quality Metrics Plot]({state["plot_url"]})'
+        answer += '\n\n---\n\n**📊 MultiQC Data**\n\n'
+        answer += f'[Download Data (CSV)]({state["table_url"]})'
 
     state['answer'] = answer
     # naive citations list from retrieved modules
