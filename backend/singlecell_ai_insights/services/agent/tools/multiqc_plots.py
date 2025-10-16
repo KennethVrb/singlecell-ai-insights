@@ -31,14 +31,12 @@ def find_plot_for_metric(metric_key, question=None):
     Returns:
         str: Plot filename or None if no match found
     """
-    if not metric_key:
-        return None
-
     # Check direct metric key match
-    metric_lower = metric_key.lower()
-    for keyword, plot_file in METRIC_TO_PLOT_MAP.items():
-        if keyword in metric_lower:
-            return plot_file
+    if metric_key:
+        metric_lower = metric_key.lower()
+        for keyword, plot_file in METRIC_TO_PLOT_MAP.items():
+            if keyword in metric_lower:
+                return plot_file
 
     # Check question for additional context
     if question:

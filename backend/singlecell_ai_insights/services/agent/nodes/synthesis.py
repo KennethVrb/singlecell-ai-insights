@@ -90,11 +90,13 @@ def synthesize(state):
     if state.get('table_url'):
         artifact_instructions.append(
             '- Mention that a CSV download is available '
-            'at the end of your response'
+            '(do not include the actual link, it will be added automatically)'
         )
     if state.get('plot_url'):
         artifact_instructions.append(
-            '- Mention that a plot visualization is available'
+            '- Mention that a plot visualization is available '
+            '(do not include any image markdown, it will be added '
+            'automatically)'
         )
 
     prompt = f"""
@@ -110,6 +112,8 @@ def synthesize(state):
 
     Instructions:
     - Answer concisely and concretely using markdown formatting.
+    - DO NOT include any image tags, plot links, or file download links in  
+      your response. These will be automatically added after your answer.
     - If the user question has nothing to with the run, 
       act like any normal assistant. Just answer based on your knowledge.
     - Dont mention anything about system given context. 
