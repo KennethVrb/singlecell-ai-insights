@@ -105,6 +105,30 @@ function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // Auto-refresh tokens every 10 minutes (before 15min expiry)
+  useEffect(() => {
+    if (!user) {
+      return
+    }
+
+    const refreshInterval = setInterval(
+      async () => {
+        try {
+          await refreshSessionRequest()
+        } catch (error) {
+          if (error instanceof ApiError && error.status === 401) {
+            setUser(null)
+          }
+        }
+      },
+      10 * 60 * 1000,
+    ) // 10 minutes
+
+    return () => {
+      clearInterval(refreshInterval)
+    }
+  }, [user])
+
   const value = useMemo<AuthContextValue>(() => {
     return {
       user,

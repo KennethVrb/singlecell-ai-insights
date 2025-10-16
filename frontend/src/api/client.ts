@@ -59,7 +59,31 @@ async function requestJSON<T>({
     config.body = JSON.stringify(body)
   }
 
-  const response = await fetch(url.toString(), config)
+  let response = await fetch(url.toString(), config)
+
+  // If 401 and not already a refresh endpoint, try refreshing token once
+  if (
+    response.status === 401 &&
+    !endpoint.includes("/auth/refresh/") &&
+    !endpoint.includes("/auth/login/")
+  ) {
+    try {
+      // Attempt token refresh
+      const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({}),
+      })
+
+      if (refreshResponse.ok) {
+        // Retry original request with new token
+        response = await fetch(url.toString(), config)
+      }
+    } catch {
+      // Refresh failed, continue with original 401 response
+    }
+  }
 
   if (!response.ok) {
     const detail = await safeReadJSON(response)

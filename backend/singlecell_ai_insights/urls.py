@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import path
 
 from singlecell_ai_insights.api.agent.views import RunAgentChatView
 from singlecell_ai_insights.api.auth import (
@@ -17,8 +17,6 @@ run_multiqc_report = RunViewSet.as_view({'get': 'multiqc_report'})
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # Browseable api urls
-    path('api/browse-auth/', include('rest_framework.urls')),
     # Auth urls
     path(
         'api/auth/login/',
