@@ -10,6 +10,8 @@ type ChatMessage = {
   citations: string[]
   notes: string[]
   metric_key: string | null
+  confidence?: number
+  confidence_explanation?: string
   created_at: string
 }
 
@@ -26,6 +28,8 @@ type StreamEvent =
         citations: string[]
         notes: string[]
         metric_key: string | null
+        confidence?: number
+        confidence_explanation?: string
       }
     }
   | { type: "error"; message: string }
@@ -38,6 +42,8 @@ type StreamCallbacks = {
     citations: string[]
     notes: string[]
     metric_key: string | null
+    confidence?: number
+    confidence_explanation?: string
   }) => void
   onError?: (message: string) => void
   onComplete?: () => void

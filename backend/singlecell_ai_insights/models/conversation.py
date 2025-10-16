@@ -41,6 +41,8 @@ class Message(models.Model):
     citations = models.JSONField(default=list, blank=True)
     notes = models.JSONField(default=list, blank=True)
     metric_key = models.CharField(max_length=255, null=True, blank=True)
+    confidence = models.IntegerField(null=True, blank=True)
+    confidence_explanation = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

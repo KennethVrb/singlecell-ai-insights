@@ -3,6 +3,50 @@
 from ..config import llm
 
 
+def calculate_confidence(state):
+    """Calculate confidence score for the answer."""
+    confidence = 0
+    reasons = []
+
+    # Factor 1: Number of retrieved documents (max 35 points)
+    num_docs = len(state.get('retrieved', []))
+    if num_docs >= 3:
+        confidence += 35
+        reasons.append(f'Found {num_docs} relevant documents')
+    elif num_docs >= 1:
+        confidence += 20
+        reasons.append(f'Found {num_docs} document(s)')
+    else:
+        confidence += 5
+        reasons.append('No specific documents retrieved')
+
+    # Factor 2: Data availability (max 30 points)
+    if state.get('tabular') and len(state.get('tabular', [])) > 0:
+        confidence += 30
+        reasons.append('Tabular data available')
+    elif state.get('samples'):
+        confidence += 15
+        reasons.append('Sample data available')
+
+    # Factor 3: Metric specificity (max 20 points)
+    if state.get('metric_key'):
+        confidence += 20
+        reasons.append('Specific metric requested')
+    elif state.get('retrieved'):
+        confidence += 15
+        reasons.append('General context available')
+
+    # Factor 4: Question clarity (max 15 points)
+    question_length = len(state.get('question', '').split())
+    if 3 <= question_length <= 40:
+        confidence += 15
+        reasons.append('Clear question')
+    else:
+        confidence += 8
+
+    return min(confidence, 100), ' • '.join(reasons)
+
+
 def synthesize(state):
     """Synthesize final answer using LLM with context."""
     # Build compact context
@@ -101,4 +145,17 @@ def synthesize(state):
             }
         )
     )
+
+    # Calculate confidence score
+    confidence, explanation = calculate_confidence(state)
+    state['confidence'] = confidence
+    state['confidence_explanation'] = explanation
+
+    # Add warning note for low confidence
+    if confidence < 30:
+        state['notes'] = [
+            *state.get('notes', []),
+            '⚠️ Low confidence - answer may be incomplete or uncertain',
+        ]
+
     return state

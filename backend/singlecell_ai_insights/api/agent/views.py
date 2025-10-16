@@ -90,6 +90,8 @@ class RunAgentChatView(APIView):
             citations=result.get('citations', []),
             notes=result.get('notes', []),
             metric_key=result.get('metric_key'),
+            confidence=result.get('confidence'),
+            confidence_explanation=result.get('confidence_explanation', ''),
         )
 
         # Return the saved message instead of raw result
@@ -170,6 +172,10 @@ class RunAgentChatStreamView(APIView):
                             citations=result.get('citations', []),
                             notes=result.get('notes', []),
                             metric_key=result.get('metric_key'),
+                            confidence=result.get('confidence'),
+                            confidence_explanation=result.get(
+                                'confidence_explanation', ''
+                            ),
                         )
 
                         # Send message ID for frontend to update

@@ -39,6 +39,8 @@ function useRunChatPanel({ runId, enabled }: UseRunChatPanelOptions): UseRunChat
       citations: msg.citations,
       notes: msg.notes,
       metricKey: msg.metric_key,
+      confidence: msg.confidence,
+      confidenceExplanation: msg.confidence_explanation,
       error: null,
     }))
 
@@ -145,6 +147,8 @@ function useRunChatPanel({ runId, enabled }: UseRunChatPanelOptions): UseRunChat
             citations: content.citations ?? [],
             notes: content.notes ?? [],
             metricKey: content.metric_key ?? null,
+            confidence: content.confidence,
+            confidenceExplanation: content.confidence_explanation,
             agentStatus: undefined,
           }))
         },

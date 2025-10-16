@@ -22,6 +22,8 @@ type ChatMessage = {
   metricKey: string | null
   error: string | null
   agentStatus?: AgentStatus
+  confidence?: number
+  confidenceExplanation?: string
 }
 
 type UseRunChatPanelResult = {

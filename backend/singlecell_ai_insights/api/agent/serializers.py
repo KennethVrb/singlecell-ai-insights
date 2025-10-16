@@ -22,6 +22,8 @@ class MessageSerializer(serializers.ModelSerializer):
             'citations',
             'notes',
             'metric_key',
+            'confidence',
+            'confidence_explanation',
             'created_at',
         ]
         read_only_fields = ['id', 'created_at']

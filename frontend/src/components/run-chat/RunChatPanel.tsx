@@ -138,14 +138,7 @@ function RunChatPanel({
               />
               <div className="flex items-center justify-end gap-2">
                 <Button type="submit" disabled={textareaValue.trim().length === 0 || isSubmitting}>
-                  {isSubmitting ? (
-                    <span className="flex items-center gap-2">
-                      <Spinner className="h-4 w-4" />
-                      Sending…
-                    </span>
-                  ) : (
-                    "Send"
-                  )}
+                  Send
                 </Button>
               </div>
             </fieldset>
