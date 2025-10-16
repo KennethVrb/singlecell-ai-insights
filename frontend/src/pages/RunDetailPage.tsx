@@ -1,6 +1,7 @@
 import { Link, useParams } from "react-router-dom"
 
 import { RunChatPanel } from "@/components/run-chat/RunChatPanel"
+import { RunMetrics } from "@/components/RunMetrics"
 import { RunStatusBadge } from "@/components/RunStatusBadge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -95,25 +96,7 @@ function RunDetailPage() {
             </CardContent>
           </Card>
 
-          <Card className="border">
-            <CardHeader>
-              <CardTitle>Run metrics</CardTitle>
-              <CardDescription>Tabs for summary, samples, and quality tables.</CardDescription>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <Spinner />
-                  <span>Loading normalized context…</span>
-                </div>
-              ) : (
-                <p>
-                  Normalized context is not yet available. Trigger normalization via the backend or
-                  rerun HealthOmics sync.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          <RunMetrics runId={run?.pk} enabled={!isLoading && isChatReady} />
         </section>
 
         <aside>

@@ -25,6 +25,16 @@ type RunMultiqcReport = {
   multiqc_report_url: string
 }
 
+type RunMetrics = {
+  total_samples: number
+  samples: Array<{
+    name: string
+    duplication_rate?: number
+    gc_content?: number
+    total_sequences?: number
+  }>
+}
+
 async function listRuns(refresh?: boolean) {
   let params = {}
 
@@ -47,6 +57,12 @@ async function getRun(pk: number) {
 async function getRunMultiqcReport(pk: number) {
   return await requestJSON<RunMultiqcReport>({
     endpoint: API_ENDPOINTS.RUNS.MULTIQC_REPORT(pk),
+  })
+}
+
+async function getRunMetrics(pk: number) {
+  return await requestJSON<RunMetrics>({
+    endpoint: API_ENDPOINTS.RUNS.METRICS(pk),
   })
 }
 
@@ -90,5 +106,21 @@ function useRunMultiqcReportMutation() {
   })
 }
 
-export { useRunsQuery, useRunQuery, useRunMultiqcReportMutation, useSyncRuns }
-export type { RunSummary, Run, RunMultiqcReport }
+function useRunMetricsQuery(pk: number | null | undefined, enabled: boolean = true) {
+  const isValidPk = typeof pk === "number" && Number.isFinite(pk)
+
+  return useQuery({
+    queryKey: ["run-metrics", isValidPk ? pk : "invalid"],
+    queryFn: () => {
+      if (!isValidPk) {
+        throw new Error("Invalid run identifier")
+      }
+
+      return getRunMetrics(pk as number)
+    },
+    enabled: isValidPk && enabled,
+  })
+}
+
+export { useRunsQuery, useRunQuery, useRunMultiqcReportMutation, useRunMetricsQuery, useSyncRuns }
+export type { RunSummary, Run, RunMultiqcReport, RunMetrics }

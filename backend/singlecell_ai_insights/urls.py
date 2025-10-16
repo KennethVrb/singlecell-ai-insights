@@ -17,6 +17,7 @@ from singlecell_ai_insights.api.runs import RunViewSet
 run_list = RunViewSet.as_view({'get': 'list'})
 run_detail = RunViewSet.as_view({'get': 'retrieve'})
 run_multiqc_report = RunViewSet.as_view({'get': 'multiqc_report'})
+run_metrics = RunViewSet.as_view({'get': 'metrics'})
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -41,6 +42,11 @@ urlpatterns = [
         'api/runs/<int:pk>/multiqc-report/',
         run_multiqc_report,
         name='run-multiqc-report',
+    ),
+    path(
+        'api/runs/<int:pk>/metrics/',
+        run_metrics,
+        name='run-metrics',
     ),
     path(
         'api/runs/<int:pk>/chat/',

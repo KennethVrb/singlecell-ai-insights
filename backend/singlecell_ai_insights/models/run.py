@@ -18,6 +18,7 @@ class Run(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True)
     output_dir_bucket = models.CharField(max_length=255, blank=True)
     output_dir_key = models.CharField(max_length=512, blank=True)
+    metrics = models.JSONField(null=True, blank=True)
 
     class Meta:
         ordering = ['-created_at']

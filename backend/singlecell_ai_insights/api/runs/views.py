@@ -8,6 +8,8 @@ from rest_framework.response import Response
 
 from singlecell_ai_insights.aws import healthomics
 from singlecell_ai_insights.models.run import Run
+from singlecell_ai_insights.services.agent.config import REPORTS_BUCKET
+from singlecell_ai_insights.services.agent.tools import load_json_from_s3
 
 from .serializers import RunSerializer, RunSummarySerializer
 
@@ -71,3 +73,77 @@ class RunViewSet(viewsets.ReadOnlyModelViewSet):
             )
 
         return Response({'multiqc_report_url': url})
+
+    @action(detail=True, methods=['get'])
+    def metrics(self, request, pk=None):
+        """Get summary metrics for a run (cached in DB)."""
+        run = self.get_object()
+
+        # Return cached metrics if available
+        if run.metrics:
+            return Response(run.metrics)
+
+        # Check if run has MultiQC data
+        if not run.output_dir_bucket or not run.output_dir_key:
+            return Response(
+                {'detail': 'MultiQC data not available for this run.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Fetch and parse MultiQC data
+        try:
+            key = f'{run.run_id}/pubdir/multiqc/multiqc_data/multiqc_data.json'
+            data = load_json_from_s3(REPORTS_BUCKET, key)
+
+            # Extract key metrics
+            general_stats = data.get('report_general_stats_data', [])
+            if not general_stats:
+                return Response(
+                    {'detail': 'No metrics found in MultiQC data.'},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            # Merge all dictionaries and filter out 'multiqc' entries
+            samples = {}
+            for stats_dict in general_stats:
+                for sample_name, sample_data in stats_dict.items():
+                    if sample_name.lower() != 'multiqc':
+                        samples[sample_name] = sample_data
+
+            if not samples:
+                return Response(
+                    {'detail': 'No sample metrics found in MultiQC data.'},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            # Extract common metrics (adjust based on your MultiQC data)
+            metrics_summary = {
+                'total_samples': len(samples),
+                'samples': [],
+            }
+
+            # Add per-sample metrics
+            for sample_name, sample_data in samples.items():
+                metrics_summary['samples'].append(
+                    {
+                        'name': sample_name,
+                        'duplication_rate': sample_data.get(
+                            'percent_duplicates'
+                        ),
+                        'gc_content': sample_data.get('percent_gc'),
+                        'total_sequences': sample_data.get('total_sequences'),
+                    }
+                )
+
+            # Cache in database
+            run.metrics = metrics_summary
+            run.save(update_fields=['metrics'])
+
+            return Response(metrics_summary)
+
+        except Exception:
+            logger.exception('Failed to load metrics for run %s', run.run_id)
+            return Response(
+                {'detail': 'Unable to load metrics from MultiQC data.'},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
