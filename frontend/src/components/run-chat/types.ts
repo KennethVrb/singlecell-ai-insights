@@ -10,6 +10,7 @@ type AgentStatus = {
   currentStep: AgentStep | null
   completedSteps: AgentStep[]
   message: string
+  stepMessages: Record<string, string>
 }
 
 type ChatMessage = {

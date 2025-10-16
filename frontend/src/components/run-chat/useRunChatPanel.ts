@@ -111,7 +111,8 @@ function useRunChatPanel({ runId, enabled }: UseRunChatPanelOptions): UseRunChat
           agentStatus: {
             currentStep: null,
             completedSteps: [],
-            message: "Initializing...",
+            message: "",
+            stepMessages: {},
           },
         },
       ])
@@ -124,6 +125,8 @@ function useRunChatPanel({ runId, enabled }: UseRunChatPanelOptions): UseRunChat
         onStatus: (step, message) => {
           updateMessage(assistantMessageId, (msg) => {
             const currentSteps = msg.agentStatus?.completedSteps ?? []
+            const currentStepMessages = msg.agentStatus?.stepMessages ?? {}
+
             // Only add step if it's not already in the list
             const newCompletedSteps = currentSteps.includes(step as AgentStep)
               ? currentSteps
@@ -135,6 +138,10 @@ function useRunChatPanel({ runId, enabled }: UseRunChatPanelOptions): UseRunChat
                 currentStep: step as AgentStep,
                 completedSteps: newCompletedSteps,
                 message,
+                stepMessages: {
+                  ...currentStepMessages,
+                  [step]: message,
+                },
               },
             }
           })
