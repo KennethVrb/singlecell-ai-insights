@@ -1,6 +1,6 @@
 """Vector store document builders."""
 
-from langchain.docstore.document import Document
+from langchain_core.documents import Document
 
 
 def build_general_stats_panels(samples, key_meta):

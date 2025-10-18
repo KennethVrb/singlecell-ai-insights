@@ -2,8 +2,8 @@
 
 import json
 
-from langchain.docstore.document import Document
 from langchain_community.vectorstores import FAISS
+from langchain_core.documents import Document
 
 from ..config import REPORTS_BUCKET, emb
 from ..exceptions import AgentServiceError

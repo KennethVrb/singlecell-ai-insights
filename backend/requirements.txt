@@ -9,3 +9,7 @@ langchain_aws
 langchain_community
 langgraph
 matplotlib
+
+
+# Development dependencies
+django-extensions
