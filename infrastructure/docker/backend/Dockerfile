@@ -1,4 +1,5 @@
-FROM python:3.12-bookworm
+ARG REGISTRY=docker.io
+FROM ${REGISTRY}/python:3.12-bookworm
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
