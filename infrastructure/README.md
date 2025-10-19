@@ -21,21 +21,42 @@ docker push <account>.dkr.ecr.<region>.amazonaws.com/python:3.12-bookworm
 
 ## Deploy
 
+### First-Time Deployment
+
+**Important**: The first deployment requires two passes because the CloudFront hostname is only available after infrastructure creation, and Django needs it for CSRF/CORS configuration.
+
 ```bash
 # Optional: Set budget email for cost alerts
 export BUDGET_EMAIL=your-email@example.com
 
-# Deploy CDK infrastructure
-./stack_upgrade.py --infrastructure
+# Step 1: Initial infrastructure deployment (creates CloudFront distribution)
+./stack_upgrade.py --infrastructure --backend --frontend
 
-# Build and push backend Docker image
+# Step 2: Get the CloudFront domain from CloudFormation outputs
+# Look for "CloudFrontDomain" in the AWS Console -> CloudFormation -> MainStack -> Outputs
+# Or run: aws cloudformation describe-stacks --stack-name MainStack --query "Stacks[0].Outputs[?OutputKey=='CloudFrontDomain'].OutputValue" --output text
+
+# Step 3: Re-deploy infrastructure with CloudFront domain parameter
+./stack_upgrade.py --infrastructure --param CloudFrontDomain=<your-cloudfront-domain>.cloudfront.net
+
+# Example:
+# ./stack_upgrade.py --infrastructure --param CloudFrontDomain=dc0blpquzem84.cloudfront.net
+
+# Step 4: Re-deploy backend to pick up the CloudFront hostname
 ./stack_upgrade.py --backend
+```
 
-# Build and deploy frontend
-./stack_upgrade.py --frontend
+### Subsequent Deployments
 
+After the initial setup, you can deploy components individually or all at once:
+
+```bash
 # Deploy everything
 ./stack_upgrade.py --infrastructure --backend --frontend
+
+# Or deploy individual components
+./stack_upgrade.py --backend
+./stack_upgrade.py --frontend
 ```
 
 ## What It Does
