@@ -1,64 +1,179 @@
-# Single-cell AI Insights Backend
+# SingleCell AI Insights
 
-Backend service built with Django and Django REST Framework to surface metadata from AWS HealthOmics pipelines. The project persists run details locally so they can be revisited quickly after the initial fetch from AWS.
+An intelligent assistant for analyzing AWS HealthOmics single-cell RNA sequencing pipeline outputs using agentic AI workflows powered by AWS Bedrock and LangGraph.
 
-## Requirements
-- Python 3.10+
-- pip / virtualenv tooling of your choice
-- AWS credentials with permission to call the HealthOmics APIs
-- SQLite works out of the box; you can point Django at another database if preferred
+## Overview
+
+SingleCell AI Insights transforms complex MultiQC quality control reports into actionable insights through natural language conversations. Ask questions in plain English and get intelligent answers backed by data analysis, visualizations, and recommendations.
+
+**Key Features:**
+- 🤖 **Agentic AI Workflow** - LangGraph orchestrates multi-step reasoning with Claude Sonnet 4
+- 💬 **Natural Language Interface** - Ask questions about your sequencing data in plain English
+- 📊 **Intelligent Analysis** - Automatic outlier detection, statistical analysis, and data interpretation
+- 🔍 **RAG-Powered Search** - FAISS vector store for semantic search across MultiQC documentation
+- 📈 **Dynamic Visualizations** - Generate custom plots and tables on demand
+- ☁️ **Production-Ready AWS Infrastructure** - ECS Fargate, RDS, CloudFront, auto-scaling
+
+## Architecture
+
+- **Frontend**: React 19 + TypeScript, Vite, TailwindCSS, shadcn/ui
+- **Backend**: Django 4.2 + DRF, LangGraph agentic workflows
+- **AI**: AWS Bedrock (Claude Sonnet 4 + Titan Embeddings)
+- **Infrastructure**: AWS ECS Fargate, RDS PostgreSQL, CloudFront CDN, S3
+- **Deployment**: One-command CDK deployment with zero-downtime updates
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) and [ARCHITECTURE_DIAGRAM.md](ARCHITECTURE_DIAGRAM.md) for detailed diagrams.
 
 ## Quick Start
-1. Create and activate a virtual environment.
+
+### For Judges/Evaluators
+
+See [JUDGE_GUIDE.md](JUDGE_GUIDE.md) for a complete walkthrough of features and evaluation criteria.
+
+### Local Development
+
+#### Prerequisites
+- Python 3.12+
+- Node.js 18+ and pnpm
+- AWS credentials with HealthOmics and Bedrock permissions
+
+#### Backend Setup
+
+1. Create and activate a virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
 2. Install dependencies:
    ```bash
-   pip install -r backend/singlecell_ai_insights/requirements.txt
-   ```
-   For local tooling (shell plus extras) you can also install:
-   ```bash
-   pip install -r backend/dev-requirements.txt
-   ```
-3. Copy the example environment file and adjust it for your setup:
-   ```bash
-   cp backend/singlecell_ai_insights/.env-example backend/singlecell_ai_insights/.env
-   ```
-   | Variable | Purpose |
-   | --- | --- |
-   | `DJANGO_SECRET_KEY` | Unique secret for Django cryptographic signing. |
-   | `DJANGO_DEBUG` | Enables Django debug mode when set to `True`. |
-   | `DJANGO_ALLOWED_HOSTS` | Comma-delimited hostnames the server will accept. |
-   | `DJANGO_CORS_ALLOWED_ORIGINS` | Origins allowed to access the API via browsers. |
-4. Apply migrations:
-   ```bash
-   python backend/manage.py migrate
-   ```
-5. Create an initial user (optional but handy for admin/browsable API access):
-   ```bash
-   python backend/manage.py createsuperuser
+   pip install -r backend/requirements.txt
+   pip install -r dev-requirements.txt  # Optional: for linting/formatting
    ```
 
-`boto3` automatically discovers AWS credentials from your environment (environment variables, shared credentials file, instance profile, and so on).
+3. Configure environment:
+   ```bash
+   cp backend/.env-example backend/.env
+   # Edit backend/.env with your AWS credentials and settings
+   ```
 
-## Running Locally
-Start the development server with:
+4. Run migrations:
+   ```bash
+   cd backend
+   python manage.py migrate
+   ```
+
+5. Create a superuser:
+   ```bash
+   python manage.py createsuperuser
+   ```
+
+6. Start the development server:
+   ```bash
+   python manage.py runserver
+   ```
+
+#### Frontend Setup
+
+1. Install dependencies:
+   ```bash
+   cd frontend
+   pnpm install
+   ```
+
+2. Configure environment:
+   ```bash
+   cp .env-example .env
+   # Edit .env to point to your backend (default: http://localhost:8000/api)
+   ```
+
+3. Start the development server:
+   ```bash
+   pnpm dev
+   ```
+
+The frontend will be available at `http://localhost:5173`.
+
+### AWS Deployment
+
+See [infrastructure/README.md](infrastructure/README.md) for complete deployment instructions.
+
+**Quick deploy:**
 ```bash
-python backend/manage.py runserver
+cd infrastructure
+export BUDGET_EMAIL=your-email@example.com
+
+# Initial deployment
+./stack_upgrade.py --infrastructure --backend --frontend
+
+# Get CloudFront domain from outputs
+aws cloudformation describe-stacks --stack-name MainStack \
+  --query "Stacks[0].Outputs[?OutputKey=='CloudFrontDomain'].OutputValue" --output text
+
+# Re-deploy with CloudFront domain
+./stack_upgrade.py --infrastructure --param CloudFrontDomain=<your-domain>.cloudfront.net
+./stack_upgrade.py --backend
 ```
 
-The app serves the DRF browsable interface by default. Use the login link exposed through `rest_framework.urls` or obtain JWT tokens via the SimpleJWT endpoints listed in `backend/singlecell_ai_insights/urls.py` to access authenticated resources.
+## Project Structure
+
+```
+singlecell-ai-insights/
+├── backend/                    # Django backend
+│   ├── singlecell_ai_insights/
+│   │   ├── api/               # REST API endpoints
+│   │   ├── aws/               # AWS service integrations
+│   │   ├── models/            # Database models
+│   │   ├── services/          # LangGraph agent workflows
+│   │   └── tests/             # Test suite
+│   ├── requirements.txt
+│   └── manage.py
+├── frontend/                   # React frontend
+│   ├── src/
+│   │   ├── api/               # API client
+│   │   ├── components/        # React components
+│   │   ├── pages/             # Page components
+│   │   └── providers/         # Context providers
+│   └── package.json
+├── infrastructure/             # AWS CDK infrastructure
+│   ├── cdk/                   # CDK stacks
+│   └── stack_upgrade.py       # Deployment script
+└── pipeline_output_example/    # Sample MultiQC data
+```
 
 ## Testing
-Automated tests live under `backend/singlecell_ai_insights/tests/`. Run them with:
+
+**Backend:**
 ```bash
-pytest backend/singlecell_ai_insights/tests
-```
-or using Django’s runner:
-```bash
-python backend/manage.py test
+cd backend
+pytest
+# or
+python manage.py test
 ```
 
-## Project Structure Highlights
-- `backend/singlecell_ai_insights/models/run.py` – persistence for cached HealthOmics runs.
-- `backend/singlecell_ai_insights/aws/` – integrations with AWS services (e.g., HealthOmics clients).
-- `backend/singlecell_ai_insights/api/` – DRF views, serializers, and URL configuration.
-- `docs/` – additional design notes and architecture references.
+**Frontend:**
+```bash
+cd frontend
+pnpm test
+```
+
+## Key Technologies
+
+- **LangGraph** - Agentic workflow orchestration with directed graphs
+- **AWS Bedrock** - Claude Sonnet 4 for chat, Titan for embeddings
+- **FAISS** - Vector similarity search for RAG
+- **Django REST Framework** - API backend with JWT authentication
+- **React Query** - Server state management and caching
+- **Server-Sent Events** - Real-time streaming responses
+
+## Documentation
+
+- [JUDGE_GUIDE.md](JUDGE_GUIDE.md) - Evaluation guide for hackathon judges
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Detailed architecture documentation
+- [ARCHITECTURE_DIAGRAM.md](ARCHITECTURE_DIAGRAM.md) - Mermaid diagrams
+- [infrastructure/README.md](infrastructure/README.md) - Deployment guide
+- [HACKATHON_SUBMISSION.md](HACKATHON_SUBMISSION.md) - Hackathon submission details
+
+## License
+
+MIT
