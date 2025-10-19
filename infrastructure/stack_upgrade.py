@@ -59,6 +59,7 @@ def create_source_archive(output_path):
                     'env',
                     '.pytest_cache',
                     'htmlcov',
+                    'staticfiles',
                 ]
             ]
 
@@ -150,6 +151,62 @@ def force_ecs_deployment(cluster_name, service_name):
         return False
 
 
+def wait_for_ecs_deployment(cluster_name, service_name):
+    """Wait for ECS service deployment to complete."""
+    ecs = boto3.client('ecs')
+    max_attempts = 60
+    delay = 10
+
+    print()
+    print('⏳ Waiting for ECS deployment to stabilize...')
+    print('   (New task must start and old task must drain)')
+
+    for attempt in range(max_attempts):
+        try:
+            response = ecs.describe_services(
+                cluster=cluster_name, services=[service_name]
+            )
+
+            if not response['services']:
+                print('❌ Service not found')
+                return False
+
+            service = response['services'][0]
+            deployments = service['deployments']
+
+            # Check if only one deployment (PRIMARY) exists and it's stable
+            if len(deployments) == 1:
+                deployment = deployments[0]
+                if deployment['status'] == 'PRIMARY':
+                    running_count = deployment['runningCount']
+                    desired_count = deployment['desiredCount']
+
+                    if running_count == desired_count:
+                        print()
+                        print('✅ ECS deployment complete!')
+                        print(
+                            f'   Running tasks: '
+                            f'{running_count}/{desired_count}'
+                        )
+                        return True
+
+            # Show progress
+            if attempt == 0:
+                print('   Deploying', end='', flush=True)
+            else:
+                print('.', end='', flush=True)
+
+            time.sleep(delay)
+
+        except Exception as e:
+            print(f'\n❌ Error checking deployment status: {e}')
+            return False
+
+    print('\n⚠️  Deployment wait timed out after 10 minutes')
+    print('   Deployment may still be in progress. Check AWS Console.')
+    return False
+
+
 def upgrade_backend(
     bucket_name, codebuild_project, cluster_name, service_name
 ):
@@ -203,7 +260,11 @@ def upgrade_backend(
                     print('✅ Build completed successfully!')
                     print()
                     # Force ECS deployment with new image
-                    force_ecs_deployment(cluster_name, service_name)
+                    if not force_ecs_deployment(cluster_name, service_name):
+                        return False
+                    # Wait for deployment to complete
+                    if not wait_for_ecs_deployment(cluster_name, service_name):
+                        return False
                     break
                 elif status in ['FAILED', 'FAULT', 'TIMED_OUT', 'STOPPED']:
                     print(f'❌ Build failed with status: {status}')
@@ -372,10 +433,11 @@ def deploy_infrastructure(cdk_dir, stack_prefix='ScAI', parameters=None):
     try:
         cmd = ['cdk', 'deploy', '--all', '--require-approval', 'never']
 
-        # Add parameters if provided
+        # Add parameters if provided (prefix with stack name)
         if parameters:
             for key, value in parameters.items():
-                cmd.extend(['--parameters', f'{key}={value}'])
+                param = f'{stack_prefix}Stack:{key}={value}'
+                cmd.extend(['--parameters', param])
 
         subprocess.run(
             cmd,
@@ -496,6 +558,11 @@ def main():
                     '⚠️  Backend deployment may be incomplete. '
                     'Check AWS Console.'
                 )
+                sys.exit(1)
+            else:
+                print()
+                print('🎉 Backend deployment complete!')
+                print(f'   API available at: {outputs.get("ApplicationUrl")}')
 
         # Deploy frontend if requested
         if args.frontend:

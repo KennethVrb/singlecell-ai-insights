@@ -12,6 +12,7 @@ ENV/
 .pytest_cache/
 *.sqlite3
 .db/
+staticfiles/
 
 # Environment files
 .env

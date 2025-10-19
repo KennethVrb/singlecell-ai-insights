@@ -22,6 +22,9 @@ docker push <account>.dkr.ecr.<region>.amazonaws.com/python:3.12-bookworm
 ## Deploy
 
 ```bash
+# Optional: Set budget email for cost alerts
+export BUDGET_EMAIL=your-email@example.com
+
 # Deploy CDK infrastructure
 ./stack_upgrade.py --infrastructure
 

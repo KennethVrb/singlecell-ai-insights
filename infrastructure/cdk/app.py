@@ -2,6 +2,7 @@
 import os
 
 import aws_cdk as cdk
+from cdk.budget_stack import BudgetStack
 from cdk.main_stack import MainStack
 
 app = cdk.App()
@@ -27,5 +28,16 @@ MainStack(
     env=env,
     description='SingleCell AI Insights infrastructure',
 )
+
+# Optional: Budget alerts (set BUDGET_EMAIL env var to enable)
+budget_email = os.getenv('BUDGET_EMAIL')
+if budget_email:
+    BudgetStack(
+        app,
+        f'{stack_prefix}BudgetStack',
+        email=budget_email,
+        env=env,
+        description='Cost monitoring and budget alerts',
+    )
 
 app.synth()

@@ -35,8 +35,12 @@ class MainStack(Stack):
         db_instance_class = CfnParameter(
             self,
             'DatabaseInstanceClass',
-            default='m5.large',
-            allowed_values=['m5.large', 'm5.xlarge', 'm5.2xlarge'],
+            default='t4g.small',
+            allowed_values=[
+                't4g.micro',
+                't4g.small',
+                't4g.medium',
+            ],
             description='Database instance type',
         )
 

@@ -270,6 +270,7 @@ class EcsStack(Construct):
             ),
             health_check_grace_period=Duration.seconds(120),
             circuit_breaker=ecs.DeploymentCircuitBreaker(rollback=True),
+            enable_execute_command=True,
         )
 
         # Attach service to target group
