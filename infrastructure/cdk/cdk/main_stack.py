@@ -147,3 +147,10 @@ class MainStack(Stack):
             value=self.frontend.frontend_bucket.bucket_name,
             description='S3 bucket for frontend static files',
         )
+
+        CfnOutput(
+            self,
+            'CloudFrontDistributionId',
+            value=self.cdn.distribution.distribution_id,
+            description='CloudFront distribution ID',
+        )

@@ -337,7 +337,38 @@ def get_aws_account_and_region():
         return None, None
 
 
-def deploy_frontend(frontend_bucket, app_url):
+def invalidate_cloudfront_cache(distribution_id):
+    """Invalidate CloudFront cache for all paths."""
+    cloudfront = boto3.client('cloudfront')
+
+    print(
+        f'🔄 Invalidating CloudFront cache for distribution: '
+        f'{distribution_id}...'
+    )
+
+    try:
+        response = cloudfront.create_invalidation(
+            DistributionId=distribution_id,
+            InvalidationBatch={
+                'Paths': {
+                    'Quantity': 1,
+                    'Items': ['/*'],
+                },
+                'CallerReference': str(time.time()),
+            },
+        )
+
+        invalidation_id = response['Invalidation']['Id']
+        print(f'✅ Cache invalidation started: {invalidation_id}')
+        print('   (Invalidation typically completes within a few minutes)')
+        return True
+
+    except Exception as e:
+        print(f'❌ Failed to invalidate cache: {e}')
+        return False
+
+
+def deploy_frontend(frontend_bucket, app_url, distribution_id=None):
     """Build and deploy frontend to S3."""
     project_root = get_project_root()
     frontend_dir = project_root / 'frontend'
@@ -348,12 +379,10 @@ def deploy_frontend(frontend_bucket, app_url):
 
     print('🎨 Building frontend...')
     print(f'   Frontend dir: {frontend_dir}')
-    print(f'   API URL: {app_url}')
-    print()
 
     # Set environment variable for build
     env = os.environ.copy()
-    env['VITE_API_BASE_URL'] = app_url
+    env['VITE_API_BASE_URL'] = f'{app_url}/api'
 
     try:
         # Install dependencies
@@ -399,6 +428,18 @@ def deploy_frontend(frontend_bucket, app_url):
         print('✅ Upload complete')
         print()
 
+        # Invalidate CloudFront cache if distribution ID provided
+        if distribution_id:
+            if not invalidate_cloudfront_cache(distribution_id):
+                print('⚠️  Cache invalidation failed, but deployment succeeded')
+                print('   Users may see cached content until TTL expires')
+        else:
+            print(
+                '⚠️  No CloudFront distribution ID provided, '
+                'skipping cache invalidation'
+            )
+
+        print()
         print('🎉 Frontend deployed successfully!')
         print(f'   Access at: {app_url}')
         return True
@@ -574,6 +615,7 @@ def main():
             # Extract required values
             frontend_bucket = outputs.get('FrontendBucketName')
             app_url = outputs.get('ApplicationUrl')
+            distribution_id = outputs.get('CloudFrontDistributionId')
 
             if not frontend_bucket or not app_url:
                 print(
@@ -584,7 +626,9 @@ def main():
                 sys.exit(1)
 
             print()
-            success = deploy_frontend(frontend_bucket, app_url)
+            success = deploy_frontend(
+                frontend_bucket, app_url, distribution_id
+            )
             if not success:
                 print('⚠️  Frontend deployment failed.')
                 sys.exit(1)
