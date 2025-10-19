@@ -1,4 +1,4 @@
-from aws_cdk import CfnParameter, Stack
+from aws_cdk import CfnOutput, CfnParameter, Stack
 
 from cdk.codebuild_stack import CodeBuildStack
 from cdk.database_stack import DatabaseStack
@@ -69,4 +69,16 @@ class MainStack(Stack):
         )
 
         # === OUTPUTS ===
-        # Future: Add outputs for external resources (e.g., CloudFront URL)
+        CfnOutput(
+            self,
+            'SourceBucketName',
+            value=self.codebuild.source_bucket.bucket_name,
+            description='S3 bucket storing backend source zips',
+        )
+
+        CfnOutput(
+            self,
+            'CodeBuildProjectName',
+            value=self.codebuild.build_project.project_name,
+            description='CodeBuild project building backend images',
+        )
