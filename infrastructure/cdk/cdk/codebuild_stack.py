@@ -67,7 +67,7 @@ class CodeBuildStack(Stack):
                 },
             ),
             build_spec=codebuild.BuildSpec.from_source_filename(
-                'infrastructure/docker/backend/buildspec.yml'
+                'buildspec.yml'
             ),
             timeout=Duration.minutes(30),
             cache=codebuild.Cache.local(

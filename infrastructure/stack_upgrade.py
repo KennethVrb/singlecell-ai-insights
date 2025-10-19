@@ -62,7 +62,17 @@ def create_source_archive(output_path):
             ]
 
             for file in files:
-                if file.endswith(('.pyc', '.pyo', '.log', '.sqlite3')):
+                # Skip unwanted files
+                if file.endswith(
+                    (
+                        '.pyc',
+                        '.pyo',
+                        '.log',
+                        '.sqlite3',
+                        '.env',
+                        '.env-example',
+                    )
+                ):
                     continue
 
                 file_path = Path(root) / file
@@ -74,10 +84,10 @@ def create_source_archive(output_path):
         dockerfile = infrastructure_dir / 'docker' / 'backend' / 'Dockerfile'
         buildspec = infrastructure_dir / 'docker' / 'backend' / 'buildspec.yml'
 
-        zipf.write(dockerfile, 'infrastructure/docker/backend/Dockerfile')
-        zipf.write(buildspec, 'infrastructure/docker/backend/buildspec.yml')
-        print('  Added: infrastructure/docker/backend/Dockerfile')
-        print('  Added: infrastructure/docker/backend/buildspec.yml')
+        zipf.write(dockerfile, 'Dockerfile')
+        zipf.write(buildspec, 'buildspec.yml')
+        print('  Added: Dockerfile')
+        print('  Added: buildspec.yml')
 
     print(f'✅ Source archive created: {output_path}')
 

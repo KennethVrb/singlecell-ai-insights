@@ -12,7 +12,7 @@ phases:
     commands:
       - echo Build started on `date`
       - echo Building the Docker image with registry $ECR_REGISTRY...
-      - docker build --build-arg REGISTRY=$ECR_REGISTRY -f infrastructure/docker/backend/Dockerfile -t $ECR_BACKEND_REPOSITORY:latest -t $ECR_BACKEND_REPOSITORY:$IMAGE_TAG .
+      - docker build --build-arg REGISTRY=$ECR_REGISTRY -f Dockerfile -t $ECR_BACKEND_REPOSITORY:latest -t $ECR_BACKEND_REPOSITORY:$IMAGE_TAG .
   
   post_build:
     commands:
