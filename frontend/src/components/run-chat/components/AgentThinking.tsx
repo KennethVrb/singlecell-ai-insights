@@ -1,6 +1,6 @@
 import { CheckCircle2, Loader2 } from "lucide-react"
 
-import type { AgentStatus, AgentStep } from "../types"
+import type { AgentStatus } from "../types"
 
 type AgentThinkingProps = {
   agentStatus: AgentStatus

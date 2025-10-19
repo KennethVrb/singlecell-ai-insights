@@ -28,11 +28,15 @@ docker push <account>.dkr.ecr.<region>.amazonaws.com/python:3.12-bookworm
 # Build and push backend Docker image
 ./stack_upgrade.py --backend
 
+# Build and deploy frontend
+./stack_upgrade.py --frontend
+
 # Deploy everything
-./stack_upgrade.py --infrastructure --backend
+./stack_upgrade.py --infrastructure --backend --frontend
 ```
 
 ## What It Does
 
-- `--infrastructure`: Deploys S3, ECR, and CodeBuild via CDK
-- `--backend`: Creates source zip, uploads to S3, triggers CodeBuild to build Docker image
+- `--infrastructure`: Deploys VPC, RDS, S3, ECR, ECS, ALB, CloudFront via CDK
+- `--backend`: Creates source zip, uploads to S3, triggers CodeBuild to build Docker image, forces ECS deployment
+- `--frontend`: Builds React app with Vite, uploads to S3 frontend bucket

@@ -8,6 +8,7 @@ import argparse
 import os
 import subprocess
 import sys
+import time
 import zipfile
 from pathlib import Path
 
@@ -80,14 +81,18 @@ def create_source_archive(output_path):
                 zipf.write(file_path, arcname)
                 print(f'  Added: {arcname}')
 
-        # Add Dockerfile and buildspec
-        dockerfile = infrastructure_dir / 'docker' / 'backend' / 'Dockerfile'
-        buildspec = infrastructure_dir / 'docker' / 'backend' / 'buildspec.yml'
+        # Add Dockerfile, buildspec, and entrypoint
+        docker_backend_dir = infrastructure_dir / 'docker' / 'backend'
+        dockerfile = docker_backend_dir / 'Dockerfile'
+        buildspec = docker_backend_dir / 'buildspec.yml'
+        entrypoint = docker_backend_dir / 'entrypoint.sh'
 
         zipf.write(dockerfile, 'Dockerfile')
         zipf.write(buildspec, 'buildspec.yml')
+        zipf.write(entrypoint, 'entrypoint.sh')
         print('  Added: Dockerfile')
         print('  Added: buildspec.yml')
+        print('  Added: entrypoint.sh')
 
     print(f'✅ Source archive created: {output_path}')
 
@@ -120,7 +125,34 @@ def trigger_codebuild(project_name, source_version):
     return build_id
 
 
-def upgrade_backend(bucket_name, codebuild_project):
+def force_ecs_deployment(cluster_name, service_name):
+    """Force a new deployment of an ECS service."""
+    ecs = boto3.client('ecs')
+
+    print(f'🔄 Forcing new deployment of ECS service: {service_name}...')
+
+    try:
+        response = ecs.update_service(
+            cluster=cluster_name,
+            service=service_name,
+            forceNewDeployment=True,
+        )
+
+        deployment_id = response['service']['deployments'][0]['id']
+        print(f'✅ Deployment triggered: {deployment_id}')
+        print(
+            f'   Monitor: https://console.aws.amazon.com/ecs/v2/clusters/'
+            f'{cluster_name}/services/{service_name}/health'
+        )
+        return True
+    except Exception as e:
+        print(f'❌ Failed to force deployment: {e}')
+        return False
+
+
+def upgrade_backend(
+    bucket_name, codebuild_project, cluster_name, service_name
+):
     """Upgrade backend by uploading source and triggering CodeBuild."""
     import tempfile
 
@@ -148,6 +180,58 @@ def upgrade_backend(bucket_name, codebuild_project):
         print('🎉 Backend build triggered successfully!')
         print(f'   Build ID: {build_id}')
         print('   Check AWS Console for build progress')
+        print()
+        print('⏳ Waiting for build to complete before forcing deployment...')
+        print('   (This may take a few minutes)')
+
+        # Wait for CodeBuild to finish
+        codebuild = boto3.client('codebuild')
+        max_attempts = 40
+        delay = 15
+
+        for attempt in range(max_attempts):
+            try:
+                response = codebuild.batch_get_builds(ids=[build_id])
+                if not response['builds']:
+                    print('⚠️  Build not found')
+                    return False
+
+                build = response['builds'][0]
+                status = build['buildStatus']
+
+                if status == 'SUCCEEDED':
+                    print('✅ Build completed successfully!')
+                    print()
+                    # Force ECS deployment with new image
+                    force_ecs_deployment(cluster_name, service_name)
+                    break
+                elif status in ['FAILED', 'FAULT', 'TIMED_OUT', 'STOPPED']:
+                    print(f'❌ Build failed with status: {status}')
+                    return False
+                elif status == 'IN_PROGRESS':
+                    if attempt == 0:
+                        print('   Building', end='', flush=True)
+                    else:
+                        print('.', end='', flush=True)
+                    time.sleep(delay)
+                else:
+                    print(f'   Build status: {status}')
+                    time.sleep(delay)
+            except Exception as e:
+                print(f'\n⚠️  Error checking build status: {e}')
+                print(
+                    '   You may need to manually force ECS deployment '
+                    'after build completes'
+                )
+                return False
+        else:
+            print('\n⚠️  Build wait timed out after 10 minutes')
+            print(
+                '   You may need to manually force ECS deployment '
+                'after build completes'
+            )
+            return False
+
         return True
 
     finally:
@@ -190,6 +274,77 @@ def get_aws_account_and_region():
         print(f'❌ Failed to get AWS credentials: {e}')
         print('   Make sure AWS CLI is configured: aws configure')
         return None, None
+
+
+def deploy_frontend(frontend_bucket, app_url):
+    """Build and deploy frontend to S3."""
+    project_root = get_project_root()
+    frontend_dir = project_root / 'frontend'
+
+    if not frontend_dir.exists():
+        print('❌ Frontend directory not found')
+        return False
+
+    print('🎨 Building frontend...')
+    print(f'   Frontend dir: {frontend_dir}')
+    print(f'   API URL: {app_url}')
+    print()
+
+    # Set environment variable for build
+    env = os.environ.copy()
+    env['VITE_API_BASE_URL'] = app_url
+
+    try:
+        # Install dependencies
+        print('📦 Installing dependencies...')
+        subprocess.run(
+            ['npm', 'install'],
+            cwd=frontend_dir,
+            check=True,
+            capture_output=True,
+        )
+        print('✅ Dependencies installed')
+        print()
+
+        # Build frontend
+        print('🔨 Building production bundle...')
+        subprocess.run(
+            ['npm', 'run', 'build'],
+            cwd=frontend_dir,
+            env=env,
+            check=True,
+        )
+        print('✅ Build complete')
+        print()
+
+        # Upload to S3
+        dist_dir = frontend_dir / 'dist'
+        if not dist_dir.exists():
+            print('❌ Build output directory not found')
+            return False
+
+        print(f'📤 Uploading to s3://{frontend_bucket}...')
+        subprocess.run(
+            [
+                'aws',
+                's3',
+                'sync',
+                str(dist_dir),
+                f's3://{frontend_bucket}/',
+                '--delete',
+            ],
+            check=True,
+        )
+        print('✅ Upload complete')
+        print()
+
+        print('🎉 Frontend deployed successfully!')
+        print(f'   Access at: {app_url}')
+        return True
+
+    except subprocess.CalledProcessError as e:
+        print(f'❌ Frontend deployment failed: {e}')
+        return False
 
 
 def deploy_infrastructure(cdk_dir, stack_prefix='ScAI', parameters=None):
@@ -253,7 +408,7 @@ def main():
     parser.add_argument(
         '--frontend',
         action='store_true',
-        help='Build and deploy frontend (future)',
+        help='Build and deploy frontend to S3',
     )
     parser.add_argument(
         '--stack-prefix',
@@ -287,7 +442,8 @@ def main():
         print('Examples:')
         print('  ./stack_upgrade.py --infrastructure')
         print('  ./stack_upgrade.py --backend')
-        print('  ./stack_upgrade.py --infrastructure --backend')
+        print('  ./stack_upgrade.py --frontend')
+        print('  ./stack_upgrade.py --infrastructure --backend --frontend')
         print('  ./stack_upgrade.py --infrastructure --param VpcMaxAzs=2')
         print(
             '  ./stack_upgrade.py --infrastructure --param VpcMaxAzs=2 '
@@ -318,16 +474,53 @@ def main():
             # Extract required values from stack outputs
             source_bucket = outputs.get('SourceBucketName')
             codebuild_project = outputs.get('CodeBuildProjectName')
+            cluster_name = outputs.get('EcsClusterName')
+            service_name = outputs.get('EcsServiceName')
 
-            if not source_bucket or not codebuild_project:
+            if not all(
+                [source_bucket, codebuild_project, cluster_name, service_name]
+            ):
                 print(
                     '❌ Error: Could not find required outputs in stack. '
                     'Deploy infrastructure first.'
                 )
+                print(f'   Found outputs: {list(outputs.keys())}')
                 sys.exit(1)
 
             print()
-            upgrade_backend(source_bucket, codebuild_project)
+            success = upgrade_backend(
+                source_bucket, codebuild_project, cluster_name, service_name
+            )
+            if not success:
+                print(
+                    '⚠️  Backend deployment may be incomplete. '
+                    'Check AWS Console.'
+                )
+
+        # Deploy frontend if requested
+        if args.frontend:
+            # Fetch stack outputs
+            stack_name = f'{args.stack_prefix}Stack'
+            print(f'📋 Fetching outputs from stack: {stack_name}')
+            outputs = get_stack_outputs(stack_name)
+
+            # Extract required values
+            frontend_bucket = outputs.get('FrontendBucketName')
+            app_url = outputs.get('ApplicationUrl')
+
+            if not frontend_bucket or not app_url:
+                print(
+                    '❌ Error: Could not find required outputs in stack. '
+                    'Deploy infrastructure first.'
+                )
+                print(f'   Found outputs: {list(outputs.keys())}')
+                sys.exit(1)
+
+            print()
+            success = deploy_frontend(frontend_bucket, app_url)
+            if not success:
+                print('⚠️  Frontend deployment failed.')
+                sys.exit(1)
 
         print()
         print('🎉 All deployments complete!')

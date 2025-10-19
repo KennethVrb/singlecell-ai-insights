@@ -3,6 +3,8 @@
 # S3 buckets to delete
 BUCKETS=(
   "sc-ai-insights-source"
+  "sc-ai-insights-reports"
+  "sc-ai-insights-frontend"
 )
 
 # ECR repositories to delete
@@ -14,6 +16,7 @@ ECR_REPOS=(
 SECRETS=(
   "sc-ai-insights-db-credentials"
   "sc-ai-insights-db-connection"
+  "sc-ai-insights-django-secret"
 )
 
 echo "Deleting S3 buckets..."

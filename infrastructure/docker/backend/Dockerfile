@@ -26,6 +26,9 @@ WORKDIR /app
 # Copy application code
 COPY --chown=django:django backend/ /app/
 
+# Copy entrypoint script
+COPY --chmod=755 entrypoint.sh /app/entrypoint.sh
+
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -35,21 +38,12 @@ ENV PYTHONUNBUFFERED=1 \
 # Switch to non-root user
 USER django
 
+# Set entrypoint
+ENTRYPOINT ["/app/entrypoint.sh"]
+
 # Expose port
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+# Health check (increased start period for migrations)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8000/api/health/ || exit 1
-
-# Run gunicorn
-CMD ["gunicorn", \
-    "--bind", "0.0.0.0:8000", \
-    "--workers", "2", \
-    "--threads", "4", \
-    "--worker-class", "gthread", \
-    "--worker-tmp-dir", "/dev/shm", \
-    "--access-logfile", "-", \
-    "--error-logfile", "-", \
-    "--log-level", "info", \
-    "singlecell_ai_insights.wsgi:application"]
