@@ -44,6 +44,16 @@ class MainStack(Stack):
             description='Database instance type',
         )
 
+        cloudfront_domain = CfnParameter(
+            self,
+            'CloudFrontDomain',
+            default='',
+            description=(
+                'CloudFront domain for CSRF/CORS '
+                '(leave empty on first deploy, update after)'
+            ),
+        )
+
         # === CREATE CHILD STACKS ===
 
         # VPC - Foundation
@@ -76,6 +86,7 @@ class MainStack(Stack):
             db_secret=self.database.connection_secret,
             ecr_repository=self.codebuild.ecr_repository,
             aws_region=aws_region,
+            cloudfront_domain=cloudfront_domain.value_as_string,
         )
 
         # Frontend - S3 bucket for static files

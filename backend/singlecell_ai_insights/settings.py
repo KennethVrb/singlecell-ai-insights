@@ -212,6 +212,18 @@ CORS_ALLOWED_ORIGINS = (
 
 CORS_ALLOW_CREDENTIALS = True
 
+# CSRF trusted origins for Django admin and forms
+_env_csrf_origins = os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS')
+CSRF_TRUSTED_ORIGINS = (
+    [
+        origin.strip()
+        for origin in _env_csrf_origins.split(',')
+        if origin.strip()
+    ]
+    if _env_csrf_origins
+    else []
+)
+
 
 # AWS clients & configuration
 session = boto3.Session(region_name=os.environ['AWS_REGION'])

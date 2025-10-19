@@ -19,6 +19,7 @@ class EcsStack(Construct):
         db_secret,
         ecr_repository,
         aws_region,
+        cloudfront_domain=None,
         **kwargs,
     ):
         super().__init__(scope, construct_id)
@@ -164,6 +165,12 @@ class EcsStack(Construct):
             environment={
                 'DJANGO_DEBUG': 'False',
                 'DJANGO_ALLOWED_HOSTS': '*',
+                'DJANGO_CSRF_TRUSTED_ORIGINS': (
+                    f'https://{cloudfront_domain}' if cloudfront_domain else ''
+                ),
+                'DJANGO_CORS_ALLOWED_ORIGINS': (
+                    f'https://{cloudfront_domain}' if cloudfront_domain else ''
+                ),
                 'JWT_COOKIE_SAMESITE': 'None',
                 'JWT_COOKIE_SECURE': 'True',
                 'AWS_REGION': aws_region,
