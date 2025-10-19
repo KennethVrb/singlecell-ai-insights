@@ -118,6 +118,21 @@ class EcsStack(Construct):
             )
         )
 
+        # Grant S3 read access to HealthOmics output bucket
+        task_role.add_to_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=[
+                    's3:GetObject',
+                    's3:ListBucket',
+                ],
+                resources=[
+                    'arn:aws:s3:::kv-healthomics-output',
+                    'arn:aws:s3:::kv-healthomics-output/*',
+                ],
+            )
+        )
+
         # CloudWatch log group
         log_group = logs.LogGroup(
             self,
