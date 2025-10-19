@@ -156,9 +156,88 @@ def upgrade_backend(bucket_name, codebuild_project):
             os.remove(archive_path)
 
 
+def get_aws_account_and_region():
+    """Get AWS account ID and region from AWS CLI."""
+    try:
+        # Get account ID
+        result = subprocess.run(
+            [
+                'aws',
+                'sts',
+                'get-caller-identity',
+                '--query',
+                'Account',
+                '--output',
+                'text',
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        account = result.stdout.strip()
+
+        # Get region
+        result = subprocess.run(
+            ['aws', 'configure', 'get', 'region'],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        region = result.stdout.strip()
+
+        return account, region
+    except subprocess.CalledProcessError as e:
+        print(f'❌ Failed to get AWS credentials: {e}')
+        print('   Make sure AWS CLI is configured: aws configure')
+        return None, None
+
+
+def deploy_infrastructure(cdk_dir):
+    """Deploy CDK infrastructure stack."""
+    print('🏗️  Deploying CDK infrastructure...')
+
+    # Get AWS account and region
+    account, region = get_aws_account_and_region()
+    if not account or not region:
+        return False
+
+    print(f'   Account: {account}')
+    print(f'   Region: {region}')
+    print()
+
+    # Set environment variables for CDK
+    env = os.environ.copy()
+    env['CDK_DEFAULT_ACCOUNT'] = account
+    env['CDK_DEFAULT_REGION'] = region
+
+    try:
+        subprocess.run(
+            ['cdk', 'deploy', '--require-approval', 'never'],
+            cwd=cdk_dir,
+            env=env,
+            check=True,
+        )
+        print()
+        print('✅ Infrastructure deployment complete!')
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f'❌ CDK deployment failed: {e}')
+        return False
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description='Upload source and trigger CodeBuild for backend'
+        description='Deploy infrastructure and application components'
+    )
+    parser.add_argument(
+        '--infrastructure',
+        action='store_true',
+        help='Deploy CDK infrastructure stack',
+    )
+    parser.add_argument(
+        '--backend',
+        action='store_true',
+        help='Build and deploy backend (CodeBuild + ECS)',
     )
     parser.add_argument(
         '--stack-name',
@@ -168,17 +247,52 @@ def main():
 
     args = parser.parse_args()
 
-    # Fetch stack outputs
-    print(f'📋 Fetching outputs from stack: {args.stack_name}')
-    outputs = get_stack_outputs(args.stack_name)
+    # If no flags specified, show help
+    if not args.infrastructure and not args.backend:
+        parser.print_help()
+        print()
+        print('Examples:')
+        print('./stack_upgrade.py --infrastructure # Deploy CDK stack')
+        print('./stack_upgrade.py --backend # Build backend image')
+        print(
+            './stack_upgrade.py --infrastructure --backend  '
+            '# Deploy everything'
+        )
+        sys.exit(1)
 
-    # Extract required values from stack outputs
-    source_bucket = outputs.get('SourceBucketName')
-    codebuild_project = outputs.get('CodeBuildProjectName')
+    project_root = get_project_root()
+    cdk_dir = project_root / 'infrastructure' / 'cdk'
 
-    # Execute upgrade
     try:
-        upgrade_backend(source_bucket, codebuild_project)
+        # Deploy infrastructure first if requested
+        if args.infrastructure:
+            success = deploy_infrastructure(cdk_dir)
+            if not success:
+                sys.exit(1)
+            print()
+
+        # Deploy backend if requested
+        if args.backend:
+            # Fetch stack outputs
+            print(f'📋 Fetching outputs from stack: {args.stack_name}')
+            outputs = get_stack_outputs(args.stack_name)
+
+            # Extract required values from stack outputs
+            source_bucket = outputs.get('SourceBucketName')
+            codebuild_project = outputs.get('CodeBuildProjectName')
+
+            if not source_bucket or not codebuild_project:
+                print(
+                    '❌ Error: Could not find required outputs in stack. '
+                    'Deploy infrastructure first.'
+                )
+                sys.exit(1)
+
+            print()
+            upgrade_backend(source_bucket, codebuild_project)
+
+        print()
+        print('🎉 All deployments complete!')
 
     except subprocess.CalledProcessError as e:
         print(f'❌ Command failed: {e}')
