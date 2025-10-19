@@ -12,6 +12,24 @@ I wanted to learn about agentic AI workflows, and this hackathon was the perfect
 
 ## What it does
 
+### MVP Scope
+
+For this hackathon, I focused on building a complete end-to-end AI analysis platform with deliberate architectural trade-offs for rapid development:
+
+**Data:** Three manually-executed AWS HealthOmics Ready2Run workflows (single-cell RNA-seq) — two successful, one purposely failed to demonstrate both scenarios.
+
+**Architecture Choices:**
+
+- **Agent embedded in Django** - Not a separate microservice (simpler deployment, tighter coupling)
+- **In-memory FAISS** - Vector index rebuilt per request (no persistent vector DB like Pinecone)
+- **Keyword-based routing** - Simple pattern matching instead of LLM-based intent classification
+- **Single pipeline type** - nf-core/scrnaseq only (not generalized for arbitrary workflows)
+- **Analysis-only** - No pipeline triggering, monitoring, or parameter configuration
+
+These choices enabled rapid iteration but would need rearchitecting for production scale (persistent vector store, separate agent service, LLM-based routing, multi-pipeline support).
+
+### AI Agent Workflow
+
 You ask questions about your genomic quality control data in natural language. The agent:
 
 1. **Loads** MultiQC reports from AWS HealthOmics workflows
@@ -33,7 +51,7 @@ The agent streams progress in real-time, maintains conversation history, and pro
 
 ## How I built it
 
-**Stack:** React 19 + TypeScript (frontend), Django + LangGraph (backend), AWS CDK (infrastructure)
+**Stack:** React 19 + TypeScript (frontend), Django + LangGraph (backend), AWS CDK (infrastructure), AWS HealthOmics, AWS Bedrock (Claude Sonnet 4 + Titan Embeddings)
 
 ### **Agent Workflow (LangGraph)**
 
@@ -55,16 +73,29 @@ Why LangGraph? Traditional RAG is stateless. Quality analysis needs multi-step r
 
 ### **Frontend**
 
-React with streaming responses (Server-Sent Events). Users see progress as the agent works through each node. JWT auth with httpOnly cookies, React Query for caching.
+Modern React 19 stack with real-time streaming UX:
+
+- **Server-Sent Events** - Stream agent progress updates as each LangGraph node executes
+- **shadcn/ui + Radix** - Accessible component primitives (dialogs, dropdowns, tooltips)
+- **TailwindCSS 4** - Utility-first styling with custom design tokens
+- **React Query** - Server state caching and automatic background refetching
+- **JWT Authentication** - httpOnly cookies for secure token storage (no localStorage)
+- **React Router 7** - Type-safe routing with protected route wrappers
+- **Lucide Icons** - Consistent iconography throughout the UI
 
 ### **Infrastructure**
 
 AWS CDK deploys:
 
+- VPC with 3-tier subnets (public/private/isolated)
 - CloudFront (routes `/` to S3, `/api/*` to ALB)
 - ECS Fargate (Django backend, auto-scales 1-4 tasks)
 - RDS PostgreSQL (conversation history)
-- VPC with 3-tier subnets (public/private/isolated)
+- S3 Frontend Bucket (React app)
+- CodeBuild for Django deployment
+- ECR for Django container
+- Secrets Manager for sensitive data
+- CloudWatch for logging
 
 One-command deployment: `./stack_upgrade.py --infrastructure --backend --frontend`
 
@@ -86,13 +117,13 @@ One-command deployment: `./stack_upgrade.py --infrastructure --backend --fronten
 
 **Streaming UX:** Users see progress as the agent works ("Loading data..." → "Building index..." → "Analyzing..."). Makes the AI feel less like a black box.
 
-**Solves a real problem:** Bioinformatics teams spend hours on manual QC analysis. This agent interprets metrics, detects outliers, and explains issues in natural language.
+**Solves a real problem:** Bioinformatics teams spend hours on manual QC analysis. This agent interprets metrics, detects outliers, and explains issues in natural language—turning what used to take 30+ minutes of manual inspection into a 30-second conversation.
 
 ## What I learned
 
 **Agentic AI is different:** It's not about chaining prompts. It's about orchestrating specialized functions that collaborate. LangGraph's graph-based approach with conditional edges was key.
 
-**Infrastructure first:** Writing CDK stacks upfront felt like overhead, but I destroyed/recreated infrastructure 20+ times during development. Having solid infrastructure let me iterate on the agent without deployment headaches.
+**Production-grade from the start:** I built the full platform capabilities locally first, then invested in proper AWS infrastructure. This forced me to think about deployment, security, and scalability early—not as an afterthought. The result is a genuinely production-ready system, not just a demo that "works on my machine."
 
 **Streaming UX matters:** The agent takes 10-15 seconds to respond, but users don't complain because they see progress. Transparency > speed.
 
@@ -122,6 +153,7 @@ I'm planning to demo this MVP within my company to collect feedback and figure o
 - Automated troubleshooting (suggest parameter adjustments)
 - Cross-study analysis (patterns across hundreds of runs)
 - Multi-pipeline support (rnaseq, atacseq, chipseq, sarek)
+- Pipeline triggering capabilities (launch HealthOmics workflows from UI)
 
 ---
 
