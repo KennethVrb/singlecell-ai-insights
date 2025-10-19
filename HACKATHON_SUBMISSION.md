@@ -1,6 +1,6 @@
 # SingleCell AI Insights
 
-**Tagline:** AI agent that analyzes genomic QC reports through natural language conversation
+**Tagline:** Platform for viewing AWS HealthOmics workflow runs and analyzing genomic QC reports through natural language conversation with an AI agent
 
 ## Inspiration
 
