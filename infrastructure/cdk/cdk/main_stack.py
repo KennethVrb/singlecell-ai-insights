@@ -1,6 +1,7 @@
 from aws_cdk import CfnParameter, Stack
 
 from cdk.codebuild_stack import CodeBuildStack
+from cdk.database_stack import DatabaseStack
 from cdk.vpc_stack import VpcStack
 
 
@@ -13,23 +14,27 @@ class MainStack(Stack):
 
         # === INPUT PARAMETERS ===
 
-        # VPC Configuration
-        vpc_max_azs = CfnParameter(
+        # Database Configuration
+        db_name = CfnParameter(
             self,
-            'VpcMaxAzs',
-            type='Number',
-            default=1,  # Setting as 1 for cost-effectiveness/hackathon
-            allowed_values=['1', '2', '3'],
-            description='Number of Availability Zones for VPC',
+            'DatabaseName',
+            default='singlecell_ai',
+            description='Database name',
         )
 
-        vpc_nat_gateways = CfnParameter(
+        db_username = CfnParameter(
             self,
-            'VpcNatGateways',
-            type='Number',
-            default=1,  # Setting as 1 for cost-effectiveness/hackathon
-            allowed_values=['1', '2'],
-            description='Number of NAT Gateways (1=shared, 2=HA)',
+            'DatabaseUsername',
+            default='postgres',
+            description='Database master username',
+        )
+
+        db_instance_class = CfnParameter(
+            self,
+            'DatabaseInstanceClass',
+            default='m5.large',
+            allowed_values=['m5.large', 'm5.xlarge', 'm5.2xlarge'],
+            description='Database instance type',
         )
 
         # S3 Bucket Names
@@ -43,11 +48,16 @@ class MainStack(Stack):
         # === CREATE CHILD STACKS ===
 
         # VPC - Foundation
-        self.vpc = VpcStack(
+        self.vpc = VpcStack(self, 'Vpc')
+
+        # Database - PostgreSQL RDS
+        self.database = DatabaseStack(
             self,
-            'Vpc',
-            max_azs=vpc_max_azs.value_as_number,
-            nat_gateways=vpc_nat_gateways.value_as_number,
+            'Database',
+            vpc=self.vpc.vpc,
+            db_name=db_name.value_as_string,
+            db_username=db_username.value_as_string,
+            instance_class=db_instance_class.value_as_string,
         )
 
         # CodeBuild - Build pipeline
@@ -59,6 +69,4 @@ class MainStack(Stack):
         )
 
         # === OUTPUTS ===
-
-        # in future this will output things like the cloudfront uri.
-        # This should only output information needed externally
+        # Future: Add outputs for external resources (e.g., CloudFront URL)

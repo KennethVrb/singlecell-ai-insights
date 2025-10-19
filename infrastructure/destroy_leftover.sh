@@ -10,6 +10,12 @@ ECR_REPOS=(
   "sc-ai-insights-backend"
 )
 
+# Secrets Manager secrets to delete
+SECRETS=(
+  "sc-ai-insights-db-credentials"
+  "sc-ai-insights-db-connection"
+)
+
 echo "Deleting S3 buckets..."
 for BUCKET in "${BUCKETS[@]}"; do
   echo "  - $BUCKET"
@@ -28,6 +34,13 @@ echo "✓ S3 buckets deleted"
 echo "Deleting ECR repositories..."
 for REPO in "${ECR_REPOS[@]}"; do
   echo "  - $REPO"
-  aws ecr delete-repository --repository-name "$REPO" --force 2>/dev/null || true
+  aws ecr delete-repository --repository-name "$REPO" --force > /dev/null || true
 done
 echo "✓ ECR repositories deleted"
+
+echo "Deleting Secrets Manager secrets..."
+for SECRET in "${SECRETS[@]}"; do
+  echo "  - $SECRET"
+  aws secretsmanager delete-secret --secret-id "$SECRET" --force-delete-without-recovery > /dev/null 2>&1 || true
+done
+echo "✓ Secrets deleted"
