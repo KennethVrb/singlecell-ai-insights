@@ -13,7 +13,6 @@ BEDROCK_EMBED_MODEL_ID = 'amazon.titan-embed-text-v2:0'
 AWS_REGION = os.environ['AWS_REGION']
 
 REPORTS_BUCKET = os.environ['REPORTS_BUCKET']
-ARTIFACT_BUCKET = os.environ['ARTIFACT_BUCKET']
 
 
 # Quality thresholds

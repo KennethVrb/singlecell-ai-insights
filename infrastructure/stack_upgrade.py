@@ -192,9 +192,9 @@ def get_aws_account_and_region():
         return None, None
 
 
-def deploy_infrastructure(cdk_dir):
-    """Deploy CDK infrastructure stack."""
-    print('🏗️  Deploying CDK infrastructure...')
+def deploy_infrastructure(cdk_dir, stack_prefix='ScAI', parameters=None):
+    """Deploy infrastructures."""
+    print('🏗️  Deploying infrastructures...')
 
     # Get AWS account and region
     account, region = get_aws_account_and_region()
@@ -203,16 +203,27 @@ def deploy_infrastructure(cdk_dir):
 
     print(f'   Account: {account}')
     print(f'   Region: {region}')
+    print(f'   Stack Prefix: {stack_prefix}')
+    if parameters:
+        print(f'   Parameters: {parameters}')
     print()
 
     # Set environment variables for CDK
     env = os.environ.copy()
     env['CDK_DEFAULT_ACCOUNT'] = account
     env['CDK_DEFAULT_REGION'] = region
+    env['CDK_STACK_PREFIX'] = stack_prefix
 
     try:
+        cmd = ['cdk', 'deploy', '--all', '--require-approval', 'never']
+
+        # Add parameters if provided
+        if parameters:
+            for key, value in parameters.items():
+                cmd.extend(['--parameters', f'{key}={value}'])
+
         subprocess.run(
-            ['cdk', 'deploy', '--require-approval', 'never'],
+            cmd,
             cwd=cdk_dir,
             env=env,
             check=True,
@@ -232,31 +243,55 @@ def main():
     parser.add_argument(
         '--infrastructure',
         action='store_true',
-        help='Deploy CDK infrastructure stack',
+        help='Deploy platform infrastructures (VPC, DB, ECS, etc.)',
     )
     parser.add_argument(
         '--backend',
         action='store_true',
-        help='Build and deploy backend (CodeBuild + ECS)',
+        help='Build and push backend Docker image',
     )
     parser.add_argument(
-        '--stack-name',
-        default='ScAICodeBuildStack',
-        help='CDK stack name (default: ScAICodeBuildStack)',
+        '--frontend',
+        action='store_true',
+        help='Build and deploy frontend (future)',
+    )
+    parser.add_argument(
+        '--stack-prefix',
+        default='ScAI',
+        help='Stack name prefix (default: ScAI)',
+    )
+    parser.add_argument(
+        '--param',
+        action='append',
+        metavar='KEY=VALUE',
+        help='CloudFormation parameter (can be used multiple times)',
     )
 
     args = parser.parse_args()
 
+    # Parse parameters
+    parameters = {}
+    if args.param:
+        for param in args.param:
+            if '=' not in param:
+                print(f'❌ Invalid parameter format: {param}')
+                print('   Use: --param KEY=VALUE')
+                sys.exit(1)
+            key, value = param.split('=', 1)
+            parameters[key] = value
+
     # If no flags specified, show help
-    if not args.infrastructure and not args.backend:
+    if not args.infrastructure and not args.backend and not args.frontend:
         parser.print_help()
         print()
         print('Examples:')
-        print('./stack_upgrade.py --infrastructure # Deploy CDK stack')
-        print('./stack_upgrade.py --backend # Build backend image')
+        print('  ./stack_upgrade.py --infrastructure')
+        print('  ./stack_upgrade.py --backend')
+        print('  ./stack_upgrade.py --infrastructure --backend')
+        print('  ./stack_upgrade.py --infrastructure --param VpcMaxAzs=2')
         print(
-            './stack_upgrade.py --infrastructure --backend  '
-            '# Deploy everything'
+            '  ./stack_upgrade.py --infrastructure --param VpcMaxAzs=2 '
+            '--param VpcNatGateways=2'
         )
         sys.exit(1)
 
@@ -264,9 +299,11 @@ def main():
     cdk_dir = project_root / 'infrastructure' / 'cdk'
 
     try:
-        # Deploy infrastructure first if requested
+        # Deploy infrastructure if requested
         if args.infrastructure:
-            success = deploy_infrastructure(cdk_dir)
+            success = deploy_infrastructure(
+                cdk_dir, args.stack_prefix, parameters if parameters else None
+            )
             if not success:
                 sys.exit(1)
             print()
@@ -274,8 +311,9 @@ def main():
         # Deploy backend if requested
         if args.backend:
             # Fetch stack outputs
-            print(f'📋 Fetching outputs from stack: {args.stack_name}')
-            outputs = get_stack_outputs(args.stack_name)
+            stack_name = f'{args.stack_prefix}Stack'
+            print(f'📋 Fetching outputs from stack: {stack_name}')
+            outputs = get_stack_outputs(stack_name)
 
             # Extract required values from stack outputs
             source_bucket = outputs.get('SourceBucketName')

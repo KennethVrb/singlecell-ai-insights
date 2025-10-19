@@ -50,9 +50,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         -e AWS_REGION=eu-west-1 \
         -e AWS_S3_PRESIGN_TTL=3600 \
         -e REPORTS_BUCKET=test-reports \
-        -e ARTIFACT_BUCKET=test-artifacts \
-        -e BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022 \
-        -e BEDROCK_EMBED_MODEL_ID=amazon.titan-embed-text-v2:0 \
         singlecell-ai-insights-backend:latest
 fi
 

@@ -2,7 +2,7 @@
 import os
 
 import aws_cdk as cdk
-from cdk.codebuild_stack import CodeBuildStack
+from cdk.main_stack import MainStack
 
 app = cdk.App()
 
@@ -10,18 +10,22 @@ app = cdk.App()
 account = os.getenv('CDK_DEFAULT_ACCOUNT')
 region = os.getenv('CDK_DEFAULT_REGION')
 
-# If not provided, CDK will use current AWS CLI credentials
+# If not provided, CDK will use current AWS environment
 if account and region:
     env = cdk.Environment(account=account, region=region)
 else:
     # Use current AWS environment
     env = None
 
-CodeBuildStack(
+# Get stack name prefix from environment or use default
+stack_prefix = os.getenv('CDK_STACK_PREFIX', 'ScAI')
+
+# Single parent stack containing all infrastructure
+MainStack(
     app,
-    'ScAICodeBuildStack',
+    f'{stack_prefix}Stack',
     env=env,
-    description='CodeBuild infrastructure for SingleCell AI Insights backend',
+    description='SingleCell AI Insights infrastructure',
 )
 
 app.synth()
