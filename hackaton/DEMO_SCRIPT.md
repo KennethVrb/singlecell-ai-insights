@@ -4,7 +4,9 @@
 
 **[Screen: Application homepage]**
 
-"Hi, I'm Kenneth, and I built SingleCell AI Insights for the AWS Hackathon. This is a production-ready platform that helps bioinformatics teams analyze genomic quality control reports using agentic AI workflows."
+"Hi, I'm Kenneth, and I built SingleCell AI Insights for the AWS Hackathon. in my company our scientists spend hours manually analyzing MultiQC quality control reports—hundreds of metrics across dozens of samples. Questions like 'Which samples failed?' or 'Why is this duplication rate high?' require deep expertise and tedious manual inspection."
+
+"I built this MVP to validate my idea: can AI assist with this analysis? The platform connects to AWS HealthOmics to fetch workflow runs. I've manually executed three single-cell RNA-seq pipelines—two successful, one failed—to demonstrate both scenarios."
 
 **[Show tagline on screen]**
 
@@ -24,7 +26,7 @@
 
 **[Highlight the chat panel]**
 
-"This chat interface lets you ask questions about your data in natural language."
+"This chat interface lets scientists ask questions about their data in plain English—turning 30+ minutes of manual inspection into a 30-second conversation."
 
 ---
 
@@ -131,9 +133,19 @@
 - Keyword-based routing, not LLM-based intent classification
 - Single pipeline type only"
 
-"These enabled rapid iteration, but a production system would need:
+"But I built it with production readiness in mind to showcase AWS capabilities. The architecture uses production-grade services:
+
+- ECS Fargate with auto-scaling
+- RDS PostgreSQL for persistence
+- CloudFront with proper routing
+- Secrets Manager for security
+- CDK for infrastructure as code
+- One command deployment & stack upgrade
+
+"To further improve the MVP to make it production ready, you'd add:
 
 - Persistent vector store
+- Domain specific knowledge bases
 - Separate agent service
 - LLM-based routing
 - Multi-pipeline support
@@ -145,11 +157,12 @@
 
 **[Screen: Application homepage or final slide]**
 
-"This is my first agentic AI system, and I'm proud it's production-ready—not just a demo. The platform is live on AWS and ready to explore."
+"This is my first agentic AI system—an MVP proof-of-concept built with production-grade AWS services to demonstrate what's possible. The platform showcases real AWS capabilities and is live to explore."
 
 **[Show URL and credentials on screen]**
 
 "Thanks for watching! Check out the repository for architecture diagrams, deployment guides, and full documentation."
+I have also sent the credentials needed to access the platform as part of the hackaton submision form called JUDGE_CREDENTIALS.txt
 
 **[Fade out]**
 
@@ -163,7 +176,6 @@
 4. **Show real responses** - Don't fake it, but pick the best examples
 5. **Practice timing** - Rehearse to hit exactly 3 minutes
 6. **Use transitions** - Smooth cuts between sections
-7. **Background music** - Subtle, professional (optional)
 
 ## Screen Recording Setup
 
