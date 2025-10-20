@@ -11,7 +11,7 @@ SingleCell AI Insights transforms complex MultiQC quality control reports into a
 - 💬 **Natural Language Interface** - Ask questions about your sequencing data in plain English
 - 📊 **Intelligent Analysis** - Automatic outlier detection, statistical analysis, and data interpretation
 - 🔍 **RAG-Powered Search** - FAISS vector store for semantic search across MultiQC documentation
-- 📈 **Dynamic Visualizations** - Generate custom plots and tables on demand
+- 📈 **Smart Artifact Selection** - AI intelligently selects relevant plots and tables from MultiQC reports
 - ☁️ **Production-Ready AWS Infrastructure** - ECS Fargate, RDS, CloudFront, auto-scaling
 
 ## Architecture
