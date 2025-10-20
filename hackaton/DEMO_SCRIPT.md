@@ -4,15 +4,9 @@
 
 **[Screen: Application homepage]**
 
-"Hi, I'm Kenneth, and I built SingleCell AI Insights for the AWS Hackathon. in my company our scientists spend hours manually analyzing MultiQC quality control reports—hundreds of metrics across dozens of samples. Questions like 'Which samples failed?' or 'Why is this duplication rate high?' require deep expertise and tedious manual inspection."
+"Hi, I'm Kenneth, and I built SingleCell AI Insights for the AWS Hackathon. in my company our scientists spend hours manually analyzing MultiQC quality control reports while these reports have a reproducable format making it a prime candidate for AI analysis."
 
 "I built this MVP to validate my idea: can AI assist with this analysis? The platform connects to AWS HealthOmics to fetch workflow runs. I've manually executed three single-cell RNA-seq pipelines—two successful, one failed—to demonstrate both scenarios."
-
-**[Show tagline on screen]**
-
-"Instead of spending 30+ minutes manually inspecting MultiQC reports, scientists can now ask questions in plain English and get answers in 30 seconds."
-
----
 
 ## Problem & Solution (0:20 - 0:45)
 
