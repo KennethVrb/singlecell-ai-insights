@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { ApiError } from "@/api/client"
 import { useAuth } from "@/providers/auth/auth-context"
 
+import logo from "@/assets/logo.svg"
+
 function LoginPage() {
   const navigate = useNavigate()
   const { login, isAuthenticated, isBootstrapping } = useAuth()
@@ -49,8 +51,15 @@ function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-6 py-10 text-foreground">
       <section className="w-full max-w-md space-y-6 rounded-lg border border-border bg-card p-8 shadow-sm">
+        <div className="flex flex-col items-center space-y-3">
+          <img src={logo} alt="SingleCell AI Insights" className="h-14 w-14 mb-0" />
+          <div className="text-center">
+            <h1 className="text-xl font-bold">SingleCell AI Insights</h1>
+          </div>
+        </div>
+
         <header className="space-y-2 text-center">
-          <h1 className="text-2xl font-semibold">Sign in to continue</h1>
+          <h2 className="text-lg font-semibold">Sign in to continue</h2>
           <p className="text-sm text-muted-foreground">
             Enter your credentials to access run insights.
           </p>
