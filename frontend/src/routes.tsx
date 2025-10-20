@@ -1,7 +1,6 @@
 import { Navigate, createBrowserRouter } from "react-router-dom"
 
 import ProtectedRoute from "@/components/ProtectedRoute"
-import LandingPage from "@/pages/LandingPage"
 import LoginPage from "@/pages/LoginPage"
 import RunDetailPage from "@/pages/RunDetailPage"
 import RunsPage from "@/pages/RunsPage"
@@ -9,7 +8,7 @@ import RunsPage from "@/pages/RunsPage"
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <LandingPage />,
+    element: <Navigate to="/runs" replace />,
   },
   {
     path: "/login",
