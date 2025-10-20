@@ -14,8 +14,8 @@ graph TB
     LookupMetric[4b. lookup_metric<br/>Extract specific metrics<br/>Detect outliers]
     RAG[4c. rag<br/>Semantic search over<br/>MultiQC documentation]
     
-    MakeTable[5. make_table<br/>Find relevant table<br/>Generate presigned S3 URL]
-    PlotMetric[6. plot_metric<br/>Find relevant plot<br/>Generate presigned S3 URL]
+    MakeTable[5. make_table<br/>AI selects relevant tables<br/>Generate presigned S3 URLs]
+    PlotMetric[6. plot_metric<br/>AI selects relevant plots<br/>Generate presigned S3 URLs]
     Synthesize[7. synthesize<br/>Generate natural language answer<br/>using Claude Sonnet 4]
     
     END([END])
@@ -67,8 +67,8 @@ graph TB
 - **rag**: Performs semantic search over MultiQC documentation using FAISS vector similarity
 
 ### Artifact Nodes (Purple)
-- **make_table**: Finds relevant CSV/TSV table in MultiQC report, uploads to S3, generates presigned URL
-- **plot_metric**: Finds relevant plot (PNG/SVG) in MultiQC report, generates presigned S3 URL
+- **make_table**: Uses Claude Sonnet 4 to intelligently select relevant data tables (from 7 available) based on the question, generates presigned S3 URLs
+- **plot_metric**: Uses Claude Sonnet 4 to intelligently select relevant plots (from 9 available) based on the question, generates presigned S3 URLs
 
 ### Synthesis Node (Orange)
 - **synthesize**: Uses Claude Sonnet 4 to generate natural language answer combining:
@@ -93,8 +93,8 @@ All nodes share a common state dictionary that accumulates information:
     'metric_key': str,          # Metric identifier (from lookup_metric)
     'metric_data': dict,        # Metric values (from lookup_metric)
     'rag_context': str,         # Retrieved documentation (from rag)
-    'table_url': str,           # Presigned S3 URL for table
-    'plot_url': str,            # Presigned S3 URL for plot
+    'table_urls': [dict],       # List of selected tables with presigned URLs
+    'plot_urls': [dict],        # List of selected plots with presigned URLs
     'answer': str,              # Final synthesized answer
     'citations': [],            # Source citations
     'notes': []                 # Additional metadata
