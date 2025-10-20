@@ -1,40 +1,43 @@
 """Artifact generation nodes (tables and plots)."""
 
-from ..tools import find_and_generate_plot_url, find_and_generate_table_url
+from ..tools import (
+    generate_plot_urls_from_indices,
+    generate_table_urls_from_indices,
+    select_artifacts_with_llm,
+)
 
 
 def make_table(state):
-    """Find and link to existing MultiQC table for the metric."""
+    """Find and link to existing MultiQC tables using LLM selection."""
     metric_key = state.get('metric_key')
     question = state.get('question')
 
-    if not metric_key:
-        # No specific metric, link to general stats table
-        table_url = find_and_generate_table_url(
-            state['run_id'], None, question
-        )
-    else:
-        # Find table for specific metric
-        table_url = find_and_generate_table_url(
-            state['run_id'], metric_key, question
-        )
+    # Use LLM to intelligently select relevant tables
+    selection = select_artifacts_with_llm(question, metric_key)
+    table_indices = selection.get('table_indices', [])
 
-    state['table_url'] = table_url
+    # Generate URLs for selected tables
+    table_urls = generate_table_urls_from_indices(
+        state['run_id'], table_indices
+    )
+
+    state['table_urls'] = table_urls
     return state
 
 
 def plot_metric(state):
-    """Find and link to existing MultiQC plot for the metric."""
+    """Find and link to existing MultiQC plots using LLM selection."""
     metric_key = state.get('metric_key')
     question = state.get('question', '')
 
-    # Try to find plot even without explicit metric_key
-    # by checking the question for plot keywords
-    plot_url = find_and_generate_plot_url(
-        state['run_id'], metric_key, question
-    )
+    # Use LLM to intelligently select relevant plots
+    selection = select_artifacts_with_llm(question, metric_key)
+    plot_indices = selection.get('plot_indices', [])
 
-    state['plot_url'] = plot_url
+    # Generate URLs for selected plots
+    plot_urls = generate_plot_urls_from_indices(state['run_id'], plot_indices)
+
+    state['plot_urls'] = plot_urls
     if metric_key:
         state['metric_key'] = metric_key
 

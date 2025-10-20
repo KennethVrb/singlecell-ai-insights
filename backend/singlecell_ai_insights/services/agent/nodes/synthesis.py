@@ -87,14 +87,19 @@ def synthesize(state):
 
     # Build artifact instructions (without actual URLs to avoid truncation)
     artifact_instructions = []
-    if state.get('table_url'):
+    if state.get('table_urls'):
+        num_tables = len(state.get('table_urls', []))
         artifact_instructions.append(
-            '- Mention that a CSV download is available '
-            '(do not include the actual link, it will be added automatically)'
+            f'- Mention that {num_tables} data table(s) are available '
+            'for download '
+            '(do not include the actual links, '
+            'they will be added automatically)'
         )
-    if state.get('plot_url'):
+    if state.get('plot_urls'):
+        num_plots = len(state.get('plot_urls', []))
         artifact_instructions.append(
-            '- Mention that a plot visualization is available '
+            f'- Mention that {num_plots} plot visualization(s) '
+            'are available '
             '(do not include any image markdown, it will be added '
             'automatically)'
         )
@@ -111,38 +116,53 @@ def synthesize(state):
     {chr(10).join(context_blocks) if context_blocks else 'None'}
 
     Instructions:
-    - Answer concisely and concretely using markdown formatting.
-    - DO NOT include any image tags, plot links, or file download links in  
-      your response. These will be automatically added after your answer.
-    - If the user question has nothing to with the run, 
-      act like any normal assistant. Just answer based on your knowledge.
-    - Dont mention anything about system given context. 
-      The users dont care what context your were given.
-    - When referencing modules, cite inline like 
-        fastqc, umi_tools, picard if relevant.
-    - If recommending actions, be specific
-        (e.g., "trim adapters", "increase sequencing depth", 
-        "adjust UMI dedup settings").
-    - Use conversation history to provide contextual answers.
+    - Answer concisely and directly using markdown formatting.
+    - Focus on explaining the data and providing actionable insights.
+    - DO NOT include any image tags, plot links, or download links - these 
+      are automatically added in separate sections after your answer.
+    - If the question is unrelated to QC metrics, answer normally based on 
+      your general knowledge.
+    - Don't mention "context", "retrieved documents", or system internals - 
+      users only care about the answer.
+    - When relevant, cite specific modules inline (e.g., fastqc, umi_tools).
+    - Provide specific, actionable recommendations when appropriate 
+      (e.g., "trim adapters", "increase sequencing depth").
+    - Use conversation history to provide contextual, coherent answers.
     {chr(10).join(artifact_instructions) if artifact_instructions else ''}
     """
 
     msg = llm.invoke(prompt)
 
-    answer = ''
+    # Build clean, structured response
+    answer_parts = []
 
-    if state.get('plot_url'):
-        answer += f'![Quality Metrics Plot]({state["plot_url"]})'
+    # 1. Main explanation first
+    answer_parts.append(msg.content)
 
-    answer += '\n\n---\n\n**Explanation**\n\n'
-    answer += msg.content
+    # 2. Visualizations section (if any)
+    if state.get('plot_urls'):
+        plot_urls = state.get('plot_urls', [])
+        if plot_urls:
+            answer_parts.append('\n\n---\n')
+            answer_parts.append('\n## 📊 Visualizations\n')
+            for plot_data in plot_urls:
+                label = plot_data.get('label', 'Plot')
+                url = plot_data.get('url')
+                answer_parts.append(f'\n### {label}\n')
+                answer_parts.append(f'![{label}]({url})\n')
 
-    # Append artifact links after LLM response to avoid truncation
-    if state.get('table_url'):
-        answer += '\n\n---\n\n**📊 MultiQC Data**\n\n'
-        answer += f'[Download Data (CSV)]({state["table_url"]})'
+    # 3. Data downloads section (if any)
+    if state.get('table_urls'):
+        table_urls = state.get('table_urls', [])
+        if table_urls:
+            answer_parts.append('\n\n---\n')
+            answer_parts.append('\n## 📥 Download Data\n\n')
+            for table_data in table_urls:
+                label = table_data.get('label', 'Data')
+                url = table_data.get('url')
+                answer_parts.append(f'- [{label}]({url})\n')
 
-    state['answer'] = answer
+    state['answer'] = ''.join(answer_parts)
     # naive citations list from retrieved modules
     state['citations'] = sorted(
         list(

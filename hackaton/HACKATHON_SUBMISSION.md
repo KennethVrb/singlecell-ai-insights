@@ -22,7 +22,7 @@ For this hackathon, I focused on building a complete end-to-end AI analysis plat
 
 - **Agent embedded in Django** - Not a separate microservice (simpler deployment, tighter coupling)
 - **In-memory FAISS** - Vector index rebuilt per request (no persistent vector DB like Pinecone)
-- **Keyword-based routing** - Simple pattern matching instead of LLM-based intent classification
+- **Hybrid routing** - Keyword-based question routing, but LLM-based artifact selection for intelligent plot/table curation
 - **Single pipeline type** - nf-core/scrnaseq only (not generalized for arbitrary workflows)
 - **Analysis-only** - No pipeline triggering, monitoring, or parameter configuration
 
@@ -37,9 +37,10 @@ You ask questions about your genomic quality control data in natural language. T
    - Routes questions to specialized nodes (sample lookup, metric comparison, or RAG)
    - Calculates statistics and detects outliers
    - Retrieves relevant documentation via FAISS vector search
-3. **Links** to existing MultiQC artifacts (tables, plots) with presigned S3 URLs
+   - Uses LLM to intelligently select relevant plots and tables based on the question
+3. **Links** to selected MultiQC artifacts with presigned S3 URLs
 4. **Interprets** results and suggests next steps for scientists
-5. **Responds** with natural language answers using Claude Sonnet 4
+5. **Responds** with natural language answers using LLM
 
 **Example questions:**
 
@@ -63,9 +64,9 @@ I built an 8-node directed graph:
    - **lookup_samples** - Identifies samples with quality issues
    - **lookup_metric** - Extracts specific metrics with outlier detection
    - **rag** - Semantic search over MultiQC documentation
-4. **make_table** - Finds relevant table in MultiQC report, generates presigned S3 URL
-5. **plot_metric** - Finds relevant plot in MultiQC report, generates presigned S3 URL
-6. **synthesize** - Uses Claude Sonnet 4 to generate natural language answer
+4. **make_table** - LLM models selects relevant tables, generates presigned S3 URLs
+5. **plot_metric** - LLM models selects relevant plots, generates presigned S3 URLs
+6. **synthesize** - LLM models generates natural language answer
 
 All nodes flow through the same path (make_table → plot_metric → synthesize), but the analysis node determines what data gets passed forward. The agent links to existing MultiQC artifacts rather than generating new ones.
 
@@ -103,7 +104,7 @@ One-command deployment: `./stack_upgrade.py --infrastructure --backend --fronten
 
 **LangGraph state management:** Took me a while to understand how state flows between nodes. Early nodes would add data, but later nodes couldn't access it. Fixed by using explicit state updates instead of relying on automatic merging.
 
-**Selecting relevant artifacts:** MultiQC reports contain a number of tables and plots. The agent needs to pick the right ones based on the question. Built logic to match metric keys from the question to artifact filenames and metadata, with fallbacks to general stats when no specific match is found.
+**Selecting relevant artifacts:** MultiQC reports contain 9 plots and 7 tables. The agent needs to pick the right ones based on the question. Initially tried keyword matching, but switched to LLM-based selection where the model intelligently chooses which artifacts to show. This provides much smarter curation but required careful retry logic to handle AWS Bedrock rate limits (2 LLM calls per question instead of 1).
 
 **Learning AWS CDK:** I've set up AWS infrastructure before using CloudFormation templates, but this was my first time using CDK. The Python-based approach is more flexible, but came with a learning curve—reading docs to understand this IaC language.
 

@@ -108,25 +108,25 @@ def chat_stream(run_id, question, conversation_history=None, metric_key=None):
                 yield {
                     'type': 'status',
                     'step': 'analyze',
-                    'message': f'Analyzing question using {node_name}...',
+                    'message': 'Analyzing question and retrieving context...',
                 }
             elif node_name == 'make_table':
                 yield {
                     'type': 'status',
                     'step': 'table',
-                    'message': 'Generating data table...',
+                    'message': 'Selecting relevant data tables...',
                 }
             elif node_name == 'plot_metric':
                 yield {
                     'type': 'status',
                     'step': 'plot',
-                    'message': 'Creating visualization...',
+                    'message': 'Selecting relevant visualizations...',
                 }
             elif node_name == 'synthesize':
                 yield {
                     'type': 'status',
                     'step': 'synthesize',
-                    'message': 'Synthesizing final answer...',
+                    'message': 'Generating answer...',
                 }
 
         # Get final result
